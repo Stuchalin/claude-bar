@@ -1,9 +1,10 @@
 import AppKit
 import ClaudeBarCore
 import Observation
+import SwiftUI
 
-/// Owns the placeholder status item and its menu: usage rows, update and error rows, the next
-/// attempt time, Refresh, Settings… and Quit. Replaced by the cards and icon of later tasks.
+/// Owns the status item (placeholder title until the icon task) and its menu: the CodexBar-style
+/// Claude card, the next attempt time, the history health row, Refresh, Settings… and Quit.
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
@@ -12,6 +13,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let history: HistoryStatusModel
     private let onOpenSettings: () -> Void
     private let onQuit: () -> Void
+    private var lastHistoryMessage: String?
 
     init(
         coordinator: RefreshCoordinator,
@@ -44,6 +46,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         } onChange: { [weak self] in
             Task { @MainActor in self?.observeStatus() }
         }
+        lastHistoryMessage = historyMessage
         render(status, historyMessage: historyMessage)
     }
 
@@ -58,20 +61,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         let time: RefreshStatusText.TimeFormat = { $0.formatted(date: .omitted, time: .shortened) }
 
-        addInfo(RefreshStatusText.metricLine(title: "Session", state: status.session, time: time))
-        addInfo(RefreshStatusText.metricLine(title: "Weekly", state: status.weekly, time: time))
-        for row in status.scoped {
-            let title = "Weekly \(row.displayName ?? row.key)"
-            addInfo(row.isAmbiguous
-                ? "\(title): ambiguous (several rows share this name)"
-                : RefreshStatusText.metricLine(title: title, state: row.state, time: time))
-        }
+        menu.addItem(cardItem(MenuCardModel(status: status, now: Date(), time: time)))
 
-        menu.addItem(.separator())
-        addInfo(RefreshStatusText.updatedLine(status, time: time))
-        if let error = RefreshStatusText.errorLine(status) { addInfo(error) }
-        if let timing = RefreshStatusText.timingLine(status, time: time) { addInfo(timing) }
-        if let historyMessage { addInfo(historyMessage) }
+        let footer = [RefreshStatusText.timingLine(status, time: time), historyMessage].compactMap { $0 }
+        if !footer.isEmpty {
+            menu.addItem(.separator())
+            footer.forEach(addInfo)
+        }
 
         menu.addItem(.separator())
         let refresh = NSMenuItem(title: "Refresh", action: #selector(refresh), keyEquivalent: "r")
@@ -87,6 +83,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(quit)
     }
 
+    /// The card in a disabled item: it shows no selection and takes no clicks.
+    private func cardItem(_ model: MenuCardModel) -> NSMenuItem {
+        let hosting = NSHostingView(rootView: MenuCardView(model: model))
+        hosting.frame = NSRect(x: 0, y: 0, width: MenuCardLayout.width, height: 1)
+        let height = ceil(hosting.fittingSize.height)
+        hosting.frame = NSRect(x: 0, y: 0, width: MenuCardLayout.width, height: max(1, height))
+        let item = NSMenuItem()
+        item.title = ""
+        item.view = hosting
+        item.isEnabled = false
+        return item
+    }
+
     private func addInfo(_ title: String) {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         item.isEnabled = false
@@ -95,6 +104,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         coordinator.trigger(.menuOpen)
+        // Countdowns are relative to now: rebuild on every open, not only on status changes.
+        rebuildMenu(coordinator.status, historyMessage: lastHistoryMessage)
     }
 
     @objc private func refresh() { coordinator.trigger(.manualRefresh) }

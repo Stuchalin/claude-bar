@@ -157,8 +157,8 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Starting points:** CodexBar `MenuCardView.swift`, `MenuCardMetricRow.swift`, `UsageMenuCardLayout.swift`, `UsageProgressBar.swift`, `UsageFormatter.swift`, `UsagePaceText.swift`, `Sources/CodexBarCore/UsagePace.swift`.
 **Constraints:** Decisions → Pace, Parsing, Refresh contract (staleness, waiting-for-fresh-data), Visual reference values, Owner acceptance, License. Card visibility: scoped rows show regardless of `is_active` (see Decisions → Response mapping precedence), keeping unavailable/ambiguous handling; explicitly disabled extra usage may be hidden; missing/malformed Session or Weekly stays visible as unavailable or shows the prior value marked stale with its timestamp; a previously known optional metric that goes missing is never reclassified as inactive/disabled. Extra usage shows amount / cap / currency or its specific state, with no reset or pace unless provided. No chart or storage changes in this task.
 **Done when:**
-- [ ] pace tests pin zero elapsed, 0 % and 100 % used, past and far-future reset, threshold edges 2/6/12, session-only 3 % guard
-- [ ] formatter and card-visibility tests pin reset/pace wording and the visibility rules above
+- [x] pace tests pin zero elapsed, 0 % and 100 % used, past and far-future reset, threshold edges 2/6/12, session-only 3 % guard
+- [x] formatter and card-visibility tests pin reset/pace wording and the visibility rules above
 - [ ] owner compared the menu with CodexBar's Codex card in light and dark mode; approval or rejected deltas recorded
 
 ### Task 7: Menu bar icon with Claude watermark

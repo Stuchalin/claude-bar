@@ -33,6 +33,8 @@ BIN_DIR="$(swift build -c release --show-bin-path)"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
+# Adapted CodexBar code ships with its MIT notice.
+cp "$ROOT/THIRD_PARTY_NOTICES.md" "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
 
 # NSAllowsArbitraryLoads permits a plain-HTTP proxy (the UI warns about it). NSAllowsLocalNetworking
 # is deliberately absent: when present, it makes the system ignore NSAllowsArbitraryLoads.
@@ -65,6 +67,10 @@ plutil -lint "$APP/Contents/Info.plist" >/dev/null
 # Ad-hoc signature with a stable identifier (= bundle ID).
 codesign --force --sign - --identifier "$BUNDLE_ID" --timestamp=none "$APP"
 codesign --verify --strict "$APP"
+if ! cmp -s "$ROOT/THIRD_PARTY_NOTICES.md" "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"; then
+  echo "error: THIRD_PARTY_NOTICES.md is missing from $APP" >&2
+  exit 1
+fi
 echo "Built $APP (version $MARKETING_VERSION, build $BUILD_NUMBER)"
 
 if [[ "$mode" == "install" ]]; then
