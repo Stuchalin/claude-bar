@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let secrets = KeychainSecretStore()
     private lazy var settingsModel = SettingsModel(settings: SettingsStore(), secrets: secrets)
     private let launchAtLogin = LaunchAtLoginModel()
+    private let historyStatus = HistoryStatusModel()
+    private var historyStore: HistoryStore?
     private var coordinator: RefreshCoordinator?
     private var settingsWindowController: SettingsWindowController?
     private var statusItemController: StatusItemController?
@@ -14,9 +16,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
 
+        let historyStore = HistoryStore(onHealthChange: historyStatus.healthSink())
+        historyStatus.attach(historyStore)
+        self.historyStore = historyStore
+
         let configuration = settingsModel.configuration
         let coordinator = RefreshCoordinator(
             fetcher: ProxyUsageFetcher(secrets: secrets),
+            history: historyStore,
             endpoint: configuration.endpoint,
             secretRevision: configuration.secretRevision,
             interval: configuration.interval
@@ -25,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.coordinator = coordinator
         statusItemController = StatusItemController(
             coordinator: coordinator,
+            history: historyStatus,
             onOpenSettings: { [weak self] in self?.openSettings() },
             onQuit: { NSApp.terminate(nil) }
         )
@@ -39,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         coordinator?.stop()
+        historyStore?.close()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -48,7 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func openSettings() {
         guard let coordinator else { return }
         let controller = settingsWindowController
-            ?? SettingsWindowController(settings: settingsModel, launchAtLogin: launchAtLogin, coordinator: coordinator)
+            ?? SettingsWindowController(
+                settings: settingsModel, launchAtLogin: launchAtLogin, coordinator: coordinator, history: historyStatus
+            )
         settingsWindowController = controller
         controller.present()
     }

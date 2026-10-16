@@ -8,11 +8,16 @@ final class SettingsWindowController: NSWindowController {
     private let settings: SettingsModel
     private let launchAtLogin: LaunchAtLoginModel
 
-    init(settings: SettingsModel, launchAtLogin: LaunchAtLoginModel, coordinator: RefreshCoordinator) {
+    init(
+        settings: SettingsModel,
+        launchAtLogin: LaunchAtLoginModel,
+        coordinator: RefreshCoordinator,
+        history: HistoryStatusModel
+    ) {
         self.settings = settings
         self.launchAtLogin = launchAtLogin
         let hosting = NSHostingController(rootView: SettingsView(
-            settings: settings, launchAtLogin: launchAtLogin, coordinator: coordinator
+            settings: settings, launchAtLogin: launchAtLogin, coordinator: coordinator, history: history
         ))
         let window = NSWindow(contentViewController: hosting)
         window.title = "ClaudeBar Settings"

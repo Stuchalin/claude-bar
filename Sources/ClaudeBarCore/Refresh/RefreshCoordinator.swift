@@ -29,6 +29,7 @@ public final class RefreshCoordinator {
 
     @ObservationIgnored private let fetcher: any UsageFetching
     @ObservationIgnored private let clock: any RefreshClock
+    @ObservationIgnored private let history: any HistoryRecording
 
     @ObservationIgnored private var endpoint: ProxyEndpoint?
     @ObservationIgnored private var secretRevision: Int
@@ -55,12 +56,14 @@ public final class RefreshCoordinator {
     public init(
         fetcher: any UsageFetching,
         clock: any RefreshClock = SystemRefreshClock(),
+        history: any HistoryRecording = NoHistoryRecording(),
         endpoint: ProxyEndpoint?,
         secretRevision: Int,
         interval: RefreshInterval
     ) {
         self.fetcher = fetcher
         self.clock = clock
+        self.history = history
         self.endpoint = endpoint
         self.secretRevision = secretRevision
         self.interval = interval
@@ -121,10 +124,14 @@ public final class RefreshCoordinator {
     /// Applies committed settings. A URL or secret change advances the generation; a URL change
     /// also hides the old source's values at once; in auto modes either change fetches.
     /// An interval change re-arms the schedule from the last attempt.
+    /// A URL change away from a configured source is reported to history.
     public func configure(endpoint: ProxyEndpoint?, secretRevision: Int, interval: RefreshInterval) {
         let urlChanged = endpoint != self.endpoint
         let secretChanged = secretRevision != self.secretRevision
         guard urlChanged || secretChanged || interval != self.interval else { return }
+        if urlChanged, let oldEndpoint = self.endpoint {
+            history.record(.sourceChanged(oldSource: oldEndpoint.normalizedString, at: clock.now))
+        }
         self.endpoint = endpoint
         self.secretRevision = secretRevision
         self.interval = interval
@@ -173,15 +180,20 @@ public final class RefreshCoordinator {
             } catch {
                 result = .failure(error)
             }
-            self?.finishFetch(result, generation: attemptGeneration, cancelled: Task.isCancelled)
+            self?.finishFetch(result, generation: attemptGeneration, endpoint: endpoint, cancelled: Task.isCancelled)
         }
     }
 
-    private func finishFetch(_ result: Result<UsageSnapshot, UsageFetchError>, generation attemptGeneration: Int, cancelled: Bool) {
+    private func finishFetch(
+        _ result: Result<UsageSnapshot, UsageFetchError>,
+        generation attemptGeneration: Int,
+        endpoint attemptEndpoint: ProxyEndpoint,
+        cancelled: Bool
+    ) {
         isInFlight = false
         fetchTask = nil
         if attemptGeneration == generation, !cancelled {
-            accept(result)
+            accept(result, source: attemptEndpoint.normalizedString)
         }
         if let pending = followUp {
             followUp = nil
@@ -206,7 +218,9 @@ public final class RefreshCoordinator {
 
     // MARK: - Results
 
-    private func accept(_ result: Result<UsageSnapshot, UsageFetchError>) {
+    /// Applies a result of the current generation and reports it to history (cancellation aside),
+    /// stamped with the acceptance time.
+    private func accept(_ result: Result<UsageSnapshot, UsageFetchError>, source: String) {
         let now = clock.now
         switch result {
         case let .success(snapshot):
@@ -215,11 +229,13 @@ public final class RefreshCoordinator {
             outcome = .succeeded
             transientFailures = 0
             record(snapshot, at: now)
+            history.record(.observed(source: source, at: now, interval: interval, snapshot: snapshot))
         case .failure(.cancelled):
-            // Not an answer from the proxy: keep the previous outcome.
+            // Not an answer from the proxy: keep the previous outcome, record nothing.
             break
         case let .failure(error):
             outcome = .failed(error)
+            history.record(.failed(source: source, at: now))
             if case let .rateLimited(retryAfter) = error {
                 cooldownUntil = RefreshPolicy.cooldownEnd(retryAfter: retryAfter, now: now)
                 transientFailures = 0

@@ -204,9 +204,13 @@ final class RefreshHarness {
     let fetcher = ScriptedFetcher()
     let coordinator: RefreshCoordinator
 
-    init(interval: RefreshInterval, endpoint: ProxyEndpoint? = RefreshFixtures.endpointA) {
+    init(
+        interval: RefreshInterval,
+        endpoint: ProxyEndpoint? = RefreshFixtures.endpointA,
+        history: any HistoryRecording = NoHistoryRecording()
+    ) {
         coordinator = RefreshCoordinator(
-            fetcher: fetcher, clock: clock, endpoint: endpoint, secretRevision: 0, interval: interval
+            fetcher: fetcher, clock: clock, history: history, endpoint: endpoint, secretRevision: 0, interval: interval
         )
         coordinator.start()
     }

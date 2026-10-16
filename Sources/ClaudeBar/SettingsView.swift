@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Bindable var settings: SettingsModel
     let launchAtLogin: LaunchAtLoginModel
     let coordinator: RefreshCoordinator
+    let history: HistoryStatusModel
 
     var body: some View {
         Form {
@@ -34,6 +35,10 @@ struct SettingsView: View {
 
             Section("Connection") {
                 ConnectionRow(coordinator: coordinator)
+            }
+
+            Section("History") {
+                HistoryRow(history: history)
             }
 
             Section {
@@ -95,6 +100,35 @@ private struct ConnectionRow: View {
         case let .failed(error):
             Label(error.hint, systemImage: "xmark.octagon.fill")
                 .foregroundStyle(.red)
+        }
+    }
+}
+
+/// History storage state and Clear history with a confirmation.
+private struct HistoryRow: View {
+    let history: HistoryStatusModel
+    @State private var isConfirming = false
+
+    var body: some View {
+        HStack {
+            if let message = history.health.message {
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            } else if let clearMessage = history.clearMessage {
+                Text(clearMessage)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Usage history is kept for one year on this Mac.")
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Clear history…") { isConfirming = true }
+                .disabled(!history.canClear)
+        }
+        .confirmationDialog("Clear usage history?", isPresented: $isConfirming) {
+            Button("Clear history", role: .destructive) { history.clearHistory() }
+        } message: {
+            Text("This deletes every recorded observation. Current usage is not affected.")
         }
     }
 }

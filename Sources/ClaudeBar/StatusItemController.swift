@@ -9,11 +9,18 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let coordinator: RefreshCoordinator
+    private let history: HistoryStatusModel
     private let onOpenSettings: () -> Void
     private let onQuit: () -> Void
 
-    init(coordinator: RefreshCoordinator, onOpenSettings: @escaping () -> Void, onQuit: @escaping () -> Void) {
+    init(
+        coordinator: RefreshCoordinator,
+        history: HistoryStatusModel,
+        onOpenSettings: @escaping () -> Void,
+        onQuit: @escaping () -> Void
+    ) {
         self.coordinator = coordinator
+        self.history = history
         self.onOpenSettings = onOpenSettings
         self.onQuit = onQuit
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -32,22 +39,22 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func observeStatus() {
-        let status = withObservationTracking {
-            coordinator.status
+        let (status, historyMessage) = withObservationTracking {
+            (coordinator.status, history.health.message)
         } onChange: { [weak self] in
             Task { @MainActor in self?.observeStatus() }
         }
-        render(status)
+        render(status, historyMessage: historyMessage)
     }
 
-    private func render(_ status: RefreshStatus) {
+    private func render(_ status: RefreshStatus, historyMessage: String?) {
         let title = RefreshStatusText.statusTitle(status)
         statusItem.button?.title = " " + title
         statusItem.button?.toolTip = "ClaudeBar — \(title)"
-        rebuildMenu(status)
+        rebuildMenu(status, historyMessage: historyMessage)
     }
 
-    private func rebuildMenu(_ status: RefreshStatus) {
+    private func rebuildMenu(_ status: RefreshStatus, historyMessage: String?) {
         menu.removeAllItems()
         let time: RefreshStatusText.TimeFormat = { $0.formatted(date: .omitted, time: .shortened) }
 
@@ -64,6 +71,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         addInfo(RefreshStatusText.updatedLine(status, time: time))
         if let error = RefreshStatusText.errorLine(status) { addInfo(error) }
         if let timing = RefreshStatusText.timingLine(status, time: time) { addInfo(timing) }
+        if let historyMessage { addInfo(historyMessage) }
 
         menu.addItem(.separator())
         let refresh = NSMenuItem(title: "Refresh", action: #selector(refresh), keyEquivalent: "r")
