@@ -4,6 +4,7 @@ import Foundation
 public final class SettingsStore {
     enum Key {
         static let proxyURL = "proxyURL"
+        static let refreshInterval = "refreshIntervalSeconds"
     }
 
     private let defaults: UserDefaults
@@ -22,6 +23,15 @@ public final class SettingsStore {
                 defaults.removeObject(forKey: Key.proxyURL)
             }
         }
+    }
+
+    /// How often to fetch; `RefreshInterval.defaultValue` when unset or unrecognized.
+    public var refreshInterval: RefreshInterval {
+        get {
+            (defaults.object(forKey: Key.refreshInterval) as? Int).flatMap(RefreshInterval.init(rawValue:))
+                ?? .defaultValue
+        }
+        set { defaults.set(newValue.rawValue, forKey: Key.refreshInterval) }
     }
 
     /// The committed endpoint, or `nil` when none is stored or the stored value no longer validates.

@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var settings: SettingsModel
     let launchAtLogin: LaunchAtLoginModel
+    let coordinator: RefreshCoordinator
 
     var body: some View {
         Form {
@@ -23,7 +24,16 @@ struct SettingsView: View {
             }
 
             Section("General") {
+                Picker("Refresh", selection: $settings.refreshInterval) {
+                    ForEach(RefreshInterval.allCases) { interval in
+                        Text(interval.title).tag(interval)
+                    }
+                }
                 LaunchAtLoginRow(model: launchAtLogin)
+            }
+
+            Section("Connection") {
+                ConnectionRow(coordinator: coordinator)
             }
 
             Section {
@@ -44,6 +54,48 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Check connection against the committed settings, with the coordinator's current result.
+private struct ConnectionRow: View {
+    let coordinator: RefreshCoordinator
+
+    var body: some View {
+        let status = coordinator.status
+        HStack {
+            statusLabel(status)
+            Spacer()
+            Button("Check connection") { coordinator.trigger(.checkConnection) }
+                .disabled(!status.isConfigured || status.connection == .loading || status.cooldownUntil != nil)
+        }
+        if let cooldown = status.cooldownUntil {
+            Text("Rate limited. Cooldown ends at \(cooldown.formatted(date: .omitted, time: .shortened)).")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func statusLabel(_ status: RefreshStatus) -> some View {
+        switch status.connection {
+        case _ where !status.isConfigured:
+            Text("Save the proxy URL and secret first.")
+                .foregroundStyle(.secondary)
+        case .idle:
+            Text("Not checked yet.")
+                .foregroundStyle(.secondary)
+        case .loading:
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Checking…")
+            }
+        case .succeeded:
+            Label("Connected.", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case let .failed(error):
+            Label(error.hint, systemImage: "xmark.octagon.fill")
+                .foregroundStyle(.red)
+        }
     }
 }
 

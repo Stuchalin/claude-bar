@@ -8,10 +8,12 @@ final class SettingsWindowController: NSWindowController {
     private let settings: SettingsModel
     private let launchAtLogin: LaunchAtLoginModel
 
-    init(settings: SettingsModel, launchAtLogin: LaunchAtLoginModel) {
+    init(settings: SettingsModel, launchAtLogin: LaunchAtLoginModel, coordinator: RefreshCoordinator) {
         self.settings = settings
         self.launchAtLogin = launchAtLogin
-        let hosting = NSHostingController(rootView: SettingsView(settings: settings, launchAtLogin: launchAtLogin))
+        let hosting = NSHostingController(rootView: SettingsView(
+            settings: settings, launchAtLogin: launchAtLogin, coordinator: coordinator
+        ))
         let window = NSWindow(contentViewController: hosting)
         window.title = "ClaudeBar Settings"
         window.styleMask = [.titled, .closable]

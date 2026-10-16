@@ -1,6 +1,19 @@
 import Foundation
 import Observation
 
+/// The committed settings the refresh coordinator needs; the secret itself is never part of it.
+public struct RefreshConfiguration: Equatable, Sendable {
+    public let endpoint: ProxyEndpoint?
+    public let secretRevision: Int
+    public let interval: RefreshInterval
+
+    public init(endpoint: ProxyEndpoint?, secretRevision: Int, interval: RefreshInterval) {
+        self.endpoint = endpoint
+        self.secretRevision = secretRevision
+        self.interval = interval
+    }
+}
+
 /// Draft and committed proxy settings behind the Settings window.
 ///
 /// Save validates the draft, mutates the secret store first and only on success persists and
@@ -19,6 +32,26 @@ public final class SettingsModel {
     public private(set) var statusMessage: String?
     /// The URL that the rest of the app uses; changes only on a successful save.
     public private(set) var committedEndpoint: ProxyEndpoint?
+    /// Bumped on every successful secret write, so observers learn of a secret change without
+    /// ever seeing the secret.
+    public private(set) var secretRevision = 0
+    /// Applied and persisted immediately, outside the URL/secret draft.
+    public var refreshInterval: RefreshInterval {
+        didSet {
+            guard refreshInterval != oldValue else { return }
+            settings.refreshInterval = refreshInterval
+            onCommit?(configuration)
+        }
+    }
+
+    /// Called synchronously after every commit (successful Save, interval change) with the fully
+    /// committed configuration, so no other main-actor work can run between the commit and its
+    /// delivery.
+    @ObservationIgnored public var onCommit: (@MainActor (RefreshConfiguration) -> Void)?
+
+    public var configuration: RefreshConfiguration {
+        RefreshConfiguration(endpoint: committedEndpoint, secretRevision: secretRevision, interval: refreshInterval)
+    }
 
     private enum StoredSecret: Equatable {
         case unknown
@@ -34,6 +67,7 @@ public final class SettingsModel {
         self.settings = settings
         self.secrets = secrets
         committedEndpoint = settings.proxyEndpoint
+        refreshInterval = settings.refreshInterval
     }
 
     /// Warning shown while the draft URL is a valid plain-HTTP URL.
@@ -91,6 +125,7 @@ public final class SettingsModel {
                 return false
             }
             storedSecret = .present(secret)
+            secretRevision += 1
         }
         secretReadError = nil
 
@@ -99,6 +134,7 @@ public final class SettingsModel {
         draftSecret = secret
         committedEndpoint = endpoint
         statusMessage = "Saved."
+        onCommit?(configuration)
         return true
     }
 }

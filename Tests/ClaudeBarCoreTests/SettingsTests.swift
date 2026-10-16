@@ -22,6 +22,19 @@ struct SettingsStoreTests {
         #expect(SettingsStore(defaults: isolated.defaults).proxyURL == nil)
     }
 
+    @Test("the refresh interval defaults to 5 minutes and persists, including manual")
+    func refreshInterval() {
+        let isolated = IsolatedDefaults()
+        let store = SettingsStore(defaults: isolated.defaults)
+        #expect(store.refreshInterval == .fiveMinutes)
+        store.refreshInterval = .manual
+        #expect(SettingsStore(defaults: isolated.defaults).refreshInterval == .manual)
+        store.refreshInterval = .thirtyMinutes
+        #expect(SettingsStore(defaults: isolated.defaults).refreshInterval == .thirtyMinutes)
+        isolated.defaults.set(42, forKey: SettingsStore.Key.refreshInterval)
+        #expect(store.refreshInterval == .fiveMinutes)
+    }
+
     @Test("an invalid stored value yields no endpoint")
     func invalidStoredValue() {
         let isolated = IsolatedDefaults()
@@ -137,5 +150,37 @@ struct SettingsModelTests {
         #expect(model.insecureDraftWarning == nil)
         model.draftURL = "not a url"
         #expect(model.insecureDraftWarning == nil)
+    }
+
+    @Test("the refresh interval applies and persists without Save")
+    func refreshIntervalPersists() {
+        let isolated = IsolatedDefaults()
+        let model = SettingsModel(settings: SettingsStore(defaults: isolated.defaults), secrets: InMemorySecretStore())
+        #expect(model.refreshInterval == .fiveMinutes)
+        model.refreshInterval = .oneMinute
+        #expect(SettingsStore(defaults: isolated.defaults).refreshInterval == .oneMinute)
+        let reopened = SettingsModel(settings: SettingsStore(defaults: isolated.defaults), secrets: InMemorySecretStore())
+        #expect(reopened.refreshInterval == .oneMinute)
+    }
+
+    @Test("the secret revision advances only on a successful secret write")
+    func secretRevision() {
+        let isolated = IsolatedDefaults()
+        let secrets = InMemorySecretStore(secret: Fixture.dummy)
+        let model = SettingsModel(settings: SettingsStore(defaults: isolated.defaults), secrets: secrets)
+        model.loadDraft()
+        model.draftURL = "https://proxy.example.com"
+        #expect(model.save())
+        #expect(model.secretRevision == 0)
+
+        model.draftSecret = Fixture.other
+        #expect(model.save())
+        #expect(model.secretRevision == 1)
+
+        let failing = SettingsModel(settings: SettingsStore(defaults: isolated.defaults), secrets: ThrowingSecretStore(readError: nil))
+        failing.loadDraft()
+        failing.draftSecret = Fixture.dummy
+        #expect(!failing.save())
+        #expect(failing.secretRevision == 0)
     }
 }
