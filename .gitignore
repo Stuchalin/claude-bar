@@ -1,0 +1,22 @@
+# SwiftPM / Xcode build output
+.build/
+build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Locally installed agent skills (skills.sh) and their lockfile
+.claude/skills/
+.agents/skills/
+skills-lock.json
+
+# Per-developer agent settings
+.claude/settings.local.json
+CLAUDE.local.md
+
+# macOS / editors
+.DS_Store
+*.swp
+*~
+.vscode/
