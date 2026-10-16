@@ -56,21 +56,34 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 
 ## Execution
 - **Implementer:** the `implementer` agent definition (Opus at medium). Task 2 and the owner parts of Tasks 6–9 are executor exceptions (see each task).
-- **Validation:** `swift build`; `swift test` (whole suite; uses injected fakes, no real Keychain or network); `Scripts/package_app.sh` producing `build/ClaudeBar.app` for any task touching the app target. Task 1 appends the exact test command (with `DEVELOPER_DIR` if needed) here. No formatter/linter configured.
+- **Validation:** `swift build`; `swift test` (whole suite; uses injected fakes, no real Keychain or network); `Scripts/package_app.sh` producing `build/ClaudeBar.app` for any task touching the app target. Exact test command (settled in Task 1): `make test`, which runs `swift test` with the Command Line Tools Swift Testing paths: `swift test -Xswiftc -F -Xswiftc /Library/Developer/CommandLineTools/Library/Developer/Frameworks -Xlinker -F -Xlinker /Library/Developer/CommandLineTools/Library/Developer/Frameworks -Xlinker -rpath -Xlinker /Library/Developer/CommandLineTools/Library/Developer/Frameworks -Xlinker -rpath -Xlinker /Library/Developer/CommandLineTools/Library/Developer/usr/lib`. Plain `swift test` fails under CLT ("no such module 'Testing'"), and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` fails until the owner accepts the Xcode license (`sudo xcodebuild -license`); with Xcode active use `make test TEST_FLAGS=`. No formatter/linter configured.
 - **Commits:** one per task, `type(scope): subject`, after Codex's review.
 
 ## Tasks
 
 ### Task 1: Buildable app skeleton with Settings, Keychain secret and launch-at-login
 **Discuss:** yes
+
+**Agreed approach (Claude and Codex, 2026-10-17):**
+- AppKit entry (`main.swift` + `AppDelegate`, accessory activation policy), not a SwiftUI `App`. Settings is an owned `NSWindowController` hosting a SwiftUI form (proxy URL, secret `SecureField`, Launch at login, Save), opened from the status menu with app activation.
+- Three SPM targets: `ClaudeBarCore` (library), `ClaudeBar` (executable), `ClaudeBarCoreTests`; tools 6.2, Swift 6 mode, macOS 14.
+- Core: `ProxyEndpoint` accepts http or https, rejects userinfo, query and fragment, keeps a path prefix and joins `api/oauth/usage` by path components with or without a trailing slash. `SecretStore` protocol (read/write/delete) with `KeychainSecretStore` (generic password, service = bundle ID, account `proxy-secret`) that distinguishes a missing item from a read failure; in-memory and throwing fakes for tests. `SettingsStore` over an injected `UserDefaults` suite.
+- Save: validate the draft, perform the Keychain mutation first, and only on success persist and publish the new URL. On failure keep the draft, show an inline error, leave prior committed settings untouched; a denied read is never treated as an empty secret.
+- HTTP is allowed with a visible warning that the secret travels unencrypted. Info.plist sets `NSAppTransportSecurity` → `NSAllowsArbitraryLoads = true` and no `NSAllowsLocalNetworking` (it would override the broad exception); HTTPS validation unchanged. A real bundled HTTP fetch is verified in Task 3 or 4.
+- Launch at login via `SMAppService.mainApp`; the toggle shows enabled / not registered / requires approval (explanation + Open System Settings) / not found, re-read when Settings opens and when the app becomes active; errors inline.
+- `Scripts/package_app.sh`: release build, assembles `build/ClaudeBar.app` with Info.plist (`ru.sdfpro.ClaudeBar`, `LSUIElement`, `LSMinimumSystemVersion` 14.0, `CFBundleVersion` from `BUILD_NUMBER`, default a timestamp), ad-hoc signs with identifier = bundle ID; an `install` subcommand quits a running copy and installs to `~/Applications/ClaudeBar.app`. A Makefile wraps build, test, app, install.
+- Swift Testing, settled: it runs under Command Line Tools via `make test` (`swift test` with explicit CLT framework/rpath flags); running under Xcode via `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` is optional once the Xcode license is accepted. The exact command is recorded in Execution → Validation.
+- Tests: `ProxyEndpoint` validation and joining, `SettingsStore` persistence, Save ordering with a throwing fake leaving prior settings intact. No real Keychain or network in `swift test`.
 **Goal:** an SPM package in the existing repository with `ClaudeBarCore` (library), `ClaudeBar` (executable) and tests; `Scripts/package_app.sh` produces and installs a runnable `ClaudeBar.app` with a placeholder status item, a menu with Settings…/Quit, a Settings window storing the proxy URL in defaults and the secret in Keychain, and a Launch at login toggle via `SMAppService`.
 **Starting points:** CodexBar `Package.swift`, `Scripts/package_app.sh`, `Sources/CodexBar/CodexbarApp.swift`, `Sources/CodexBar/StatusItemController.swift`.
 **Constraints:** Decisions → Stack, Packaging, Secret storage, Deferred. The approach agreement fixes bundle ID, install path, signing mode and the credential-store protocol. No network fetching in this task. Routine tests use an injected fake credential store. URL validation rejects credentials in URL/query; URL joining with a path prefix is explicit. The existing `.gitignore` already covers build output and local skills; extend it only if needed.
 **Done when:**
-- [ ] `swift build`, `swift test` and `Scripts/package_app.sh` succeed from a clean checkout, and Execution → Validation states the exact test command
+- [x] `swift build`, `swift test` and `Scripts/package_app.sh` succeed from a clean checkout, and Execution → Validation states the exact test command
 - [ ] launching the installed bundle shows a status item and no Dock icon
-- [ ] Settings persists the URL; the secret round-trips through the credential-store protocol
-- [ ] tests pin URL validation/joining and Settings persistence against the fake store
+- [x] Settings persists the URL; the secret round-trips through the credential-store protocol
+- [x] tests pin URL validation/joining and Settings persistence against the fake store
+
+Note: implementation is complete; the visible-status-item acceptance (installed bundle) moves to Task 2.
 
 ### Task 2: OWNER-RUN — bundle, Keychain and login smoke gate
 **Executor:** the primary agent with the owner at the machine; not the implementer subagent. The owner performs Finder launches, Keychain prompts and logout/login; the agent records results and owns any packaging/signing fix, reviewed by Codex.
@@ -78,6 +91,7 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 **Starting points:** `Scripts/package_app.sh`, the Settings/credential-store code from Task 1.
 **Constraints:** use a dummy Keychain value, never the real secret, in tests and evidence; clean the test item afterwards. Test two distinguishable builds (e.g. different build number) installed at the same stable path, and the exact artifact the login item registers. A new Keychain prompt per rebuild is not PASS. BLOCKED pauses Tasks 3+; setting up a stable local signing identity or changing storage requires an owner ruling, and stable signing is not promised to fix `SMAppService` (Apple TN2206).
 **Done when:**
+- [ ] owner confirmed the installed ~/Applications/ClaudeBar.app shows a visible status item, its menu opens Settings and Quit, and there is no Dock icon; in Settings, Cmd-V and Cmd-A work in both the URL and secret fields and Cmd-C works in the URL field (the secure field need not allow copying)
 - [ ] build A installed, dummy secret saved; build B installed at the same path reads it without a prompt (or the failure is recorded)
 - [ ] Launch at login: enable → logout/login → app starts; disable → logout/login → app does not start
 - [ ] verdict, builds tested and any signing change recorded in `docs/smoke-gate.md`
