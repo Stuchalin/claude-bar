@@ -4,7 +4,7 @@ macOS menu bar app showing Claude subscription limits fetched through the owner'
 claude-code-proxy, in CodexBar's visual style. Built jointly by Claude Code and Codex.
 
 ## Collaboration
-- Plans live in `docs/plans/`, executed with `/peer-planning:exec`: a subagent implements each
+- Plans live in `docs/plans/` (finished ones move to `docs/plans/completed/`), executed with `/peer-planning:exec`: a subagent implements each
   task, Codex reviews the diff before the commit. Tasks marked `**Discuss:** yes` agree the
   approach with Codex first.
 - The agent whose pane received the owner's request is the only writer in the worktree; the peer
