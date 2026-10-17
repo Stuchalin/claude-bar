@@ -6,6 +6,9 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 
+# Release zips and sidecars (Scripts/package_app.sh release)
+dist/
+
 # App icon build intermediates (Assets/AppIcon/build.sh)
 Assets/AppIcon/.build/
 

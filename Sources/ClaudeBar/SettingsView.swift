@@ -148,7 +148,7 @@ private struct LaunchAtLoginRow: View {
                 Button("Open System Settings") { model.openSystemSettings() }
             }
         case .notFound:
-            Text("macOS cannot find ClaudeBar as a login item. Install it with `make install` and launch it from ~/Applications.")
+            Text("macOS cannot find ClaudeBar as a login item. Install it to /Applications with Homebrew (`brew install --cask stuchalin/claude-bar/claudebar`) or `make install`, then launch it from there.")
                 .foregroundStyle(.secondary)
         }
         if let error = model.errorMessage {

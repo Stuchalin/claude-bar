@@ -8,7 +8,7 @@ TEST_FLAGS ?= -Xswiftc -F -Xswiftc $(CLT_DEV)/Frameworks \
 	-Xlinker -rpath -Xlinker $(CLT_DEV)/Frameworks \
 	-Xlinker -rpath -Xlinker $(CLT_DEV)/usr/lib
 
-.PHONY: build test app install
+.PHONY: build test app install release
 
 build:
 	swift build
@@ -21,3 +21,7 @@ app:
 
 install:
 	Scripts/package_app.sh install
+
+# Universal release zip: make release VERSION=X.Y.Z -> dist/ClaudeBar-X.Y.Z.zip (+ .sha256).
+release:
+	Scripts/package_app.sh release "$(VERSION)"

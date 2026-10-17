@@ -11,7 +11,24 @@ shared secret, for Macs without local Claude OAuth credentials.
 - Swift 6.2+; Command Line Tools are enough. No third-party packages.
 - A running claude-code-proxy, its URL and shared secret.
 
-## Build and install
+## Install
+
+After the first release, install from the Homebrew tap:
+
+```bash
+brew install --cask stuchalin/claude-bar/claudebar   # available after the first release
+brew upgrade --cask claudebar
+```
+
+The app lives in `/Applications/ClaudeBar.app`. It is ad-hoc signed and not notarized, so
+macOS may block the first launch; allow it under **System Settings → Privacy & Security →
+Open Anyway**. A copy left in `~/Applications` by an earlier local install can be removed
+once the `/Applications` copy works; history and the Keychain secret are kept outside the app.
+
+Launch ClaudeBar, open **Settings…**, enter the proxy URL and secret, then **Save**. The
+secret is stored in Keychain.
+
+## Build from source
 
 Run from the repository root:
 
@@ -19,14 +36,14 @@ Run from the repository root:
 make build                       # Debug build
 make test                        # Tests with Command Line Tools framework paths
 make app                         # Release bundle: build/ClaudeBar.app
-Scripts/package_app.sh install   # Build and install to ~/Applications/ClaudeBar.app
+make install                     # Build and install to /Applications/ClaudeBar.app
+make release VERSION=X.Y.Z       # Universal zip: dist/ClaudeBar-X.Y.Z.zip and .sha256
 ```
 
-`make install` is an alias for the install command. Installation quits and replaces
-the existing app. With a full Xcode toolchain, use `make test TEST_FLAGS=`.
-
-Launch `~/Applications/ClaudeBar.app`, open **Settings…**, enter the proxy URL and
-secret, then **Save**. The secret is stored in Keychain.
+Installation quits and replaces the existing app. With a full Xcode toolchain, use
+`make test TEST_FLAGS=`. A release build joins arm64 and x86_64 slices, sets both bundle
+versions to `X.Y.Z` and checks the zip with `Scripts/verify_release.sh`;
+`Scripts/test_release.sh dist/ClaudeBar-X.Y.Z.zip` runs that check against tampered copies.
 
 Downloaded ZIP builds were tested with quarantine removed; see the
 [installation test notes](docs/smoke-gate.md).

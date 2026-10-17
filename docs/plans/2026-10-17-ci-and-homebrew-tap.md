@@ -42,14 +42,23 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 
 ### Task 1: Release-ready universal packaging
 **Discuss:** yes
+
+**Agreed approach (Claude and Codex, 2026-10-17):**
+- New mode `Scripts/package_app.sh release <X.Y.Z>` (and `make release VERSION=X.Y.Z`); strict grammar `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$` checked before any build, invalid → exit 64.
+- Two single-arch builds (`swift build -c release --arch arm64|x86_64 --product ClaudeBar`) with separate `--scratch-path`s, each binary taken from `--show-bin-path` called with identical flags; `lipo -create`, assemble, ad-hoc sign once after joining. Works under Command Line Tools here (Xcode license not accepted; multi-`--arch` would need the Xcode build system) and in CI.
+- Release sets `CFBundleShortVersionString` and `CFBundleVersion` to `X.Y.Z` (dotted values valid per Apple's CFBundleVersion documentation); local builds keep 0.1.0 and the timestamp.
+- Artifact `dist/ClaudeBar-X.Y.Z.zip` (`ditto -c -k --keepParent`) plus `dist/ClaudeBar-X.Y.Z.zip.sha256` in `<hash>  <filename>` form; `dist/` git-ignored.
+- `Scripts/verify_release.sh <zip>` (reused by CI): the expected version comes from the release input / the strict file name, never from the bundle being checked; unzip to temp; exactly one top-level `ClaudeBar.app`; both bundle versions equal it; executable bit; `codesign --verify --strict`; `lipo -archs` arm64 + x86_64; each slice's minos ≤ 14.0; sidecar digest matches. A 0.1.0 bundle packaged as 0.1.1, or a missing Intel slice, must fail.
+- `install` → `/Applications/ClaudeBar.app`; Settings `.notFound` hint and README follow. No real install run as a test.
+- If the x86_64 cross-build fails locally, an arm64-only dry run does not close Task 1; universal validation stays outstanding until it passes in CI.
 **Goal:** a release entry point produces, for a given version, a universal `ClaudeBar.app` zipped as `ClaudeBar-<version>.zip` with a `.sha256` sidecar, ad-hoc signed, and verified from the unpacked zip; local native builds and install keep working, with install now targeting `/Applications`.
 **Starting points:** `Scripts/package_app.sh`, `Makefile`, `README.md`, `Sources/ClaudeBar/SettingsView.swift` (launch-at-login `.notFound` text).
 **Constraints:** Decisions → Toolchain, Universal binary, Version and build number, Install location, No third-party build tools. `--show-bin-path` must use the same arch/build flags as the build, or a native binary gets packaged. Do not run a real install on the developer Mac as a test.
 **Done when:**
-- [ ] the unpacked release zip contains exactly one top-level `ClaudeBar.app` with the given `CFBundleShortVersionString`, the release `CFBundleVersion` rule applied, an executable binary, `codesign --verify --strict` passing, `lipo -archs` showing arm64 and x86_64, and each slice's minimum macOS not above 14; the sidecar digest matches the zip
-- [ ] an invalid version string is rejected before building
-- [ ] the native local build keeps its bundle ID, Resources (notices, icon), version handling and signing checks; `install` targets `/Applications/ClaudeBar.app`
-- [ ] the Settings `.notFound` hint and README's install section name `/Applications` and the tap install (tap command may be marked "after release" until Task 5)
+- [x] the unpacked release zip contains exactly one top-level `ClaudeBar.app` with the given `CFBundleShortVersionString`, the release `CFBundleVersion` rule applied, an executable binary, `codesign --verify --strict` passing, `lipo -archs` showing arm64 and x86_64, and each slice's minimum macOS not above 14; the sidecar digest matches the zip
+- [x] an invalid version string is rejected before building
+- [x] the native local build keeps its bundle ID, Resources (notices, icon), version handling and signing checks; `install` targets `/Applications/ClaudeBar.app`
+- [x] the Settings `.notFound` hint and README's install section name `/Applications` and the tap install (tap command may be marked "after release" until Task 5)
 
 ### Task 2: CI workflow for checks and tagged releases
 **Discuss:** yes
