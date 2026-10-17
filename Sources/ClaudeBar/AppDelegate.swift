@@ -30,9 +30,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         coordinator.bind(to: settingsModel)
         self.coordinator = coordinator
+
+        // `--history-fixtures` (this launch only) swaps the charts' reader for synthetic in-memory
+        // data under its own source, with the charts' clock frozen at launch so the fixture windows
+        // stay current. Recording still goes to the real store, which never sees fixtures.
+        let useFixtures = UsageHistoryFixtures.isRequested()
+        let launchDate = Date()
+        let historyCharts = if useFixtures {
+            UsageHistoryMenuModel(
+                reader: UsageHistoryFixtures.make(now: launchDate), isFixture: true, now: { launchDate }
+            )
+        } else {
+            UsageHistoryMenuModel(reader: historyStore, isFixture: false)
+        }
+        let settingsModel = settingsModel
+        let historySource: @MainActor () -> String? = if useFixtures {
+            { UsageHistoryFixtures.source }
+        } else {
+            { settingsModel.configuration.endpoint?.normalizedString }
+        }
         statusItemController = StatusItemController(
             coordinator: coordinator,
             history: historyStatus,
+            historyCharts: historyCharts,
+            historySource: historySource,
             onOpenSettings: { [weak self] in self?.openSettings() },
             onQuit: { NSApp.terminate(nil) }
         )

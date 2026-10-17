@@ -177,8 +177,8 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Starting points:** CodexBar `QuotaBurndownChartMenuView.swift`, `QuotaBurndownModel.swift`, `PlanUtilizationHistoryChartMenuView.swift`, `StatusItemController+UsageHistoryMenu.swift`; history store from Task 5.
 **Constraints:** Decisions → History storage, Visual reference values, Owner acceptance, License. Never draw a line across a break or gap; runs are plotted by their observed endpoints. Peaks are labelled as observed peaks. Past windows exist only where reset boundaries were observed; windows without observations are shown as unobserved, never 0 %, and are not reconstructed.
 **Done when:**
-- [ ] chart-model tests on synthetic fixtures pin current-window filtering, segment splits at breaks/gaps, a reset, multiple past windows, unobserved windows, all-missing data, downsampling
-- [ ] a debug fixture mode lets the owner see both charts populated without waiting for real history
+- [x] chart-model tests on synthetic fixtures pin current-window filtering, segment splits at breaks/gaps, a reset, multiple past windows, unobserved windows, all-missing data, downsampling
+- [x] a debug fixture mode lets the owner see both charts populated without waiting for real history
 - [ ] owner reviewed both charts on the fixtures (real history optional); approval or rejected deltas recorded
 
 ### Task 9: Documentation and final acceptance

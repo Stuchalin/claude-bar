@@ -122,6 +122,32 @@ public final class HistoryStore: HistoryRecording, @unchecked Sendable {
         }
     }
 
+    /// Distinct observed reset dates (`reset_kind = 'at'`) of `streamID`, oldest first.
+    public func resetDates(streamID: Int64) async throws -> [Date] {
+        try await read { db in
+            try db.query(
+                "SELECT DISTINCT resets_at FROM runs WHERE stream_id = ? AND reset_kind = 'at' AND resets_at IS NOT NULL ORDER BY resets_at",
+                [.integer(streamID)]
+            ) { row in Date(timeIntervalSince1970: row.real(0)) }
+        }
+    }
+
+    /// Every run of `streamID` with an observed reset at or after `resetsFrom`, whenever it was
+    /// observed, ordered by first sighting.
+    public func runs(streamID: Int64, resetsFrom: Date) async throws -> [HistoryRun] {
+        try await read { db in
+            try db.query(
+                """
+                SELECT id, stream_id, first_seen_at, last_seen_at, used_percent, reset_kind, resets_at, closed_at, close_reason
+                FROM runs WHERE stream_id = ? AND reset_kind = 'at' AND resets_at >= ?
+                ORDER BY first_seen_at, id
+                """,
+                [.integer(streamID), .real(resetsFrom.timeIntervalSince1970)],
+                map: Self.run(from:)
+            )
+        }
+    }
+
     /// Breaks of `source` within `from…to`, oldest first.
     public func breaks(source: String, from: Date = .distantPast, to: Date = .distantFuture) async throws -> [HistoryBreak] {
         try await read { db in
