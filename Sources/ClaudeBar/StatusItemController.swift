@@ -3,7 +3,7 @@ import ClaudeBarCore
 import Observation
 import SwiftUI
 
-/// Owns the status item (the two-bar icon with the Claude watermark) and its menu: the CodexBar-style
+/// Owns the status item (the two-bar icon with the Claude starburst) and its menu: the CodexBar-style
 /// Claude card, the "Usage history" charts submenu, the next attempt time, the history health row,
 /// Refresh, Settings… and Quit.
 @MainActor
@@ -77,9 +77,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         button.setAccessibilityLabel(model.accessibilityLabel)
     }
 
-    /// An 18×18 pt template image with 1× and 2× bitmaps, so neither scale is resampled.
+    /// A 24×18 pt template image with 1× and 2× bitmaps, so neither scale is resampled. The status
+    /// item has variable length, so it follows the image width.
     private static func templateImage(_ model: MenuBarIconModel) -> NSImage {
-        let size = NSSize(width: MenuBarIconRenderer.sizePoints, height: MenuBarIconRenderer.sizePoints)
+        let size = NSSize(width: MenuBarIconRenderer.widthPoints, height: MenuBarIconRenderer.heightPoints)
         let image = NSImage(size: size)
         for scale in [1, 2] {
             guard let raster = MenuBarIconRenderer.render(model, scale: scale) else { continue }

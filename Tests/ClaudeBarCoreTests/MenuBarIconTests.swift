@@ -52,18 +52,21 @@ struct MenuBarIconTests {
 
     // MARK: Geometry
 
-    @Test("2× geometry is CodexBar's grid; 1× snaps every edge to whole pixels")
+    @Test("canvas is 24×18 pt; 2× bars are CodexBar's grid; 1× snaps every edge to whole pixels")
     func geometry() {
         let double = MenuBarIconRenderer.Geometry(scale: 2)
-        #expect(double.canvasPixels == 36)
+        #expect(double.canvasWidth == 48 && double.canvasHeight == 36)
         #expect(double.topBar == CGRect(x: 3, y: 19, width: 30, height: 12))
         #expect(double.bottomBar == CGRect(x: 3, y: 5, width: 30, height: 8))
+        #expect(double.starburst.center == CGPoint(x: 41, y: 18))
+        #expect(double.starburstRegion == CGRect(x: 34, y: 0, width: 14, height: 36))
 
         let single = MenuBarIconRenderer.Geometry(scale: 1)
-        #expect(single.canvasPixels == 18)
+        #expect(single.canvasWidth == 24 && single.canvasHeight == 18)
         #expect(single.topBar == CGRect(x: 2, y: 10, width: 15, height: 6))
         #expect(single.bottomBar == CGRect(x: 2, y: 3, width: 15, height: 4))
-        #expect(single.knockoutZones == [CGRect(x: 1, y: 9, width: 17, height: 8), CGRect(x: 1, y: 2, width: 17, height: 6)])
+        #expect(single.barZones == [CGRect(x: 1, y: 9, width: 17, height: 8), CGRect(x: 1, y: 2, width: 17, height: 6)])
+        #expect(single.starburstRegion == CGRect(x: 18, y: 0, width: 6, height: 18))
     }
 
     @Test("fill width rounds the remaining share and clamps it")
@@ -76,37 +79,44 @@ struct MenuBarIconTests {
         #expect(MenuBarIconRenderer.fillWidthPixels(remaining: 50, rectWidth: 15) == 8)
     }
 
-    // MARK: Watermark and knockout
+    // MARK: Starburst
 
-    @Test("no watermark pixel lies inside a knockout zone, and the watermark shows outside it",
+    @Test("the starburst draws only in its right-hand region, never inside the bars or their margin",
           arguments: Variant.allCases, scales)
-    func knockout(variant: Variant, scale: Int) throws {
-        let watermark = try render(variant, scale: scale, layers: .watermarkOnly)
+    func starburstPlacement(variant: Variant, scale: Int) throws {
+        let star = try render(variant, scale: scale, layers: .starburstOnly)
         let geometry = MenuBarIconRenderer.Geometry(scale: scale)
         var visible = 0
-        for y in 0 ..< watermark.height {
-            for x in 0 ..< watermark.width {
+        for y in 0 ..< star.height {
+            for x in 0 ..< star.width {
                 let center = CGPoint(x: Double(x) + 0.5, y: Double(y) + 0.5)
-                let alpha = watermark.alpha(x: x, y: y)
-                if geometry.knockoutZones.contains(where: { $0.contains(center) }) {
-                    #expect(alpha == 0, "watermark pixel at (\(x), \(y)) inside the knockout")
-                } else if alpha > 0 {
-                    visible += 1
-                    #expect(Int(alpha) <= byte(MenuBarIconRenderer.watermarkAlpha) + 1, "watermark is faint")
+                let alpha = star.alpha(x: x, y: y)
+                if geometry.starburstRegion.contains(center) {
+                    #expect(!geometry.barZones.contains { $0.contains(center) })
+                    if alpha > 0 {
+                        visible += 1
+                        #expect(Int(alpha) <= byte(MenuBarIconRenderer.starburstAlpha) + 1, "starburst is translucent")
+                    }
+                } else {
+                    #expect(alpha == 0, "starburst pixel at (\(x), \(y)) outside its region")
                 }
             }
         }
-        #expect(visible > 0)
+        #expect(visible >= 9 * scale * scale, "starburst too small to read")
+        // The core is solid at the starburst opacity.
+        let core = geometry.starburst.center
+        expectAlpha(star, x: Int(core.x), y: Int(core.y), near: MenuBarIconRenderer.starburstAlpha)
 
-        // In the full icon the gap ring (zone minus bar) stays clear too.
+        // In the full icon the starburst region is the starburst alone (no overlap, no knockout) and
+        // nothing but the bars draws left of it.
         let full = try render(variant, scale: scale)
-        for (zone, bar) in zip(geometry.knockoutZones, [geometry.topBar, geometry.bottomBar]) {
-            for y in Int(zone.minY) ..< Int(zone.maxY) {
-                for x in Int(zone.minX) ..< Int(zone.maxX) {
-                    let center = CGPoint(x: Double(x) + 0.5, y: Double(y) + 0.5)
-                    if !bar.contains(center) {
-                        #expect(full.alpha(x: x, y: y) == 0, "gap pixel at (\(x), \(y)) is not clear")
-                    }
+        for y in 0 ..< full.height {
+            for x in 0 ..< full.width {
+                let center = CGPoint(x: Double(x) + 0.5, y: Double(y) + 0.5)
+                if geometry.starburstRegion.contains(center) {
+                    #expect(full.alpha(x: x, y: y) == star.alpha(x: x, y: y))
+                } else if !geometry.barZones.contains(where: { $0.contains(center) }) {
+                    #expect(full.alpha(x: x, y: y) == 0, "stray pixel at (\(x), \(y))")
                 }
             }
         }
@@ -198,7 +208,7 @@ struct MenuBarIconTests {
         let geometry = MenuBarIconRenderer.Geometry(scale: scale)
         expectAlpha(raster, x: Int(geometry.topBar.midX), y: Int(geometry.topBar.midY), near: 1)
         expectAlpha(raster, x: Int(geometry.bottomBar.midX), y: Int(geometry.bottomBar.midY), near: 0.28)
-        #expect(raster.image.width == 18 * scale && raster.image.height == 18 * scale)
+        #expect(raster.image.width == 24 * scale && raster.image.height == 18 * scale)
     }
 
     // MARK: Model and VoiceOver label

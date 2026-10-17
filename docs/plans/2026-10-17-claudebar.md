@@ -19,7 +19,7 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 ## Decisions
 - **Own app, not a CodexBar fork** — owner ruling (option A), chosen to avoid maintaining a fork against upstream.
 - **Scope of display:** Session (`five_hour`), Weekly (`seven_day`), model-scoped weekly (possibly several), Extra usage (`extra_usage`). No `seven_day_breakdown`. Owner ruling.
-- **Icon:** CodexBar's two-bar template icon (top = session, bottom = weekly, fill = remaining) at 18×18 pt, plus a large gray Claude-logo watermark behind the bars (alpha ≈ 0.3) with a ≈1 px knockout around each bar so rays never cross bars. Logo is our own simplified vector starburst, not a copied asset. Unknown/stale must be visually distinct from 0 % and 100 %. Owner ruling (watermark); alpha/gap are starting values tuned at owner review.
+- **Icon:** CodexBar's two-bar template icon (top = session, bottom = weekly, fill = remaining) at 18×18 pt, plus a large gray Claude-logo watermark behind the bars (alpha ≈ 0.3) with a ≈1 px knockout around each bar so rays never cross bars. Logo is our own simplified vector starburst, not a copied asset. Unknown/stale must be visually distinct from 0 % and 100 %. Owner ruling (watermark); alpha/gap are starting values tuned at owner review. **Revised by owner ruling 2026-10-17 (variant E, after previews):** the icon is 24×18 pt; CodexBar's full-width bars (30 px at 2x) on the left and a separate Claude starburst (~14 px at 2x, alpha ≈ 0.7) to their right with no overlap and no knockout; the watermark-behind-bars design is dropped.
 - **Single Claude account behind the proxy** — owner ruling. No profiles/multi-account; Clear history plus a documented limitation that account switches are undetectable.
 - **Stack:** Swift tools version ≥ 6.2, Swift 6 language mode, macOS 14+, SPM only (no Xcode project), AppKit `NSStatusItem` + `NSMenu` with `NSMenuItem.view = NSHostingView(SwiftUI)`, Swift Charts, no third-party packages. Evidence: CodexBar uses this composition (`Sources/CodexBar/StatusItemController.swift`, `StatusItemController+MenuCardItems.swift`); `swiftc -swift-version 6.2` is rejected by the local 6.3.3 toolchain (valid: 4, 4.2, 5, 6). Pair-settled.
 - **Packaging:** a small script assembling `ClaudeBar.app` (Contents/MacOS, Resources, generated Info.plist with `LSUIElement`), modelled on CodexBar's `Scripts/package_app.sh` without its dependency machinery. Stable bundle ID and a stable install path (e.g. `~/Applications/ClaudeBar.app`) that the login item registers. Ad-hoc signing stability for Keychain/login is unverified until Task 2. Pair-settled.
@@ -163,11 +163,11 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 
 ### Task 7: Menu bar icon with Claude watermark
 **Executor:** implementer; owner visual approval recorded by the primary agent.
-**Goal:** the status item renders the two-bar template icon with the gray Claude starburst watermark and bar knockout, distinct unknown and stale variants, and an accessibility description.
+**Goal:** the status item renders the 24×18 pt two-bar template icon with a separate Claude starburst to the right of the bars (variant E, owner ruling 2026-10-17), distinct unknown and stale variants, and an accessibility description.
 **Starting points:** CodexBar `Sources/CodexBar/IconRenderer.swift` (PixelGrid, bar rects, alphas, stale dimming).
 **Constraints:** Decisions → Icon, Owner acceptance, License. Template image; fill = remaining.
 **Done when:**
-- [x] deterministic raster tests at 1x and 2x for 0 / 50 / 100 / unknown / stale, including no logo pixels inside the knockout zone
+- [x] deterministic raster tests at 1x and 2x for 0 / 50 / 100 / unknown / stale, including no starburst pixels inside the bar zones (bars plus a 1 px margin)
 - [x] VoiceOver label states both percentages or the unknown/stale condition
 - [ ] owner inspected the icon on light and dark menu bars next to CodexBar; approved alpha/gap or recorded deltas
 
