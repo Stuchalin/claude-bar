@@ -13,12 +13,17 @@ shared secret, for Macs without local Claude OAuth credentials.
 
 ## Install
 
-After the first release, install from the Homebrew tap:
+Install and upgrade from the Homebrew tap, always with the fully qualified name (the official
+Homebrew cask `claudebar` is a different app):
 
 ```bash
-brew install --cask stuchalin/claude-bar/claudebar   # available after the first release
-brew upgrade --cask claudebar
+brew install --cask stuchalin/claude-bar/claude-bar
+brew upgrade --cask stuchalin/claude-bar/claude-bar
 ```
+
+If ClaudeBar was installed under the old token `claudebar`, see the
+[tap README](https://github.com/Stuchalin/homebrew-claude-bar#migrating-from-the-old-claudebar-token)
+for the manual migration.
 
 The app lives in `/Applications/ClaudeBar.app`. It is ad-hoc signed and not notarized, so
 macOS may block the first launch; allow it under **System Settings → Privacy & Security →

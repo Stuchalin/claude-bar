@@ -115,14 +115,22 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 - [x] the tap README explains re-enabling the schedule after GitHub disables it and running it manually
 
 ### Task 6: Publish the tap; OWNER-RUN install and upgrade check
+
+**Incident and agreed fix (Claude and Codex, 2026-10-17):**
+- First acceptance FAILED: after `v0.1.1` and the updater commit, `brew upgrade --cask claudebar` resolved the bare token to the official homebrew/cask `claudebar` (tddworks/ClaudeBar 0.5.16, a different app) and replaced `/Applications/ClaudeBar.app`. Homebrew's `CaskLoader.for` tries the API (official) loader before tap loaders, and cask names must be globally unique (docs.brew.sh, How to Create and Maintain a Tap → naming).
+- Owner ruling: rename our cask token to `claude-bar` (absent from homebrew/cask). Tap: `Casks/claude-bar.rb` (`cask "claude-bar"`, same stanzas plus `conflicts_with cask: "claudebar"`), `Casks/claudebar.rb` removed, no `cask_renames.json` (Homebrew's rename lookup is provenance-blind and could treat the official app as our predecessor); updater template, paths and tests (including the `conflicts_with` line) and workflow follow; README documents qualified install and upgrade (`brew upgrade --cask stuchalin/claude-bar/claude-bar`) and the manual migration (quit the running app, `brew uninstall --cask claudebar` without `--zap`, then install the new qualified token). ClaudeBar README and Settings hint use the new qualified token.
+- New acceptance sequence: owner installs via `stuchalin/claude-bar/claude-bar` → orchestrator cuts `v0.1.2` → updater commits → owner runs the qualified upgrade → checks that Homebrew records an installed `claude-bar` token (`$(brew --caskroom)/claude-bar` exists; the token exists only in our tap) and `brew info --cask stuchalin/claude-bar/claude-bar` shows it installed (this reports the selected definition, not the receipt's tap), plus the installed app's bundle id `ru.sdfpro.ClaudeBar` and `CFBundleShortVersionString` — not only the display name.
 **Executor:** the primary agent publishes the tap and cuts the second release unattended; the owner performs the install and upgrade checks on their Mac.
-**Goal:** `Stuchalin/homebrew-claude-bar` is public; the owner installed `v0.1.0` from the tap, then the updater proved a real update to `v0.1.1` by itself, and the owner upgraded to it.
-**Constraints:** Decisions → Who publishes, Gatekeeper, Install location. Strict order, a technical dependency of the check rather than a permission gate: publish the tap at `v0.1.0` → owner installs and confirms → only then cut `v0.1.1` (a plain version bump) → updater commit → owner upgrades. If the owner is unavailable, the task stays open with outstanding acceptance and `v0.1.1` is not cut ahead.
+**Goal:** `Stuchalin/homebrew-claude-bar` is public; the owner installed ClaudeBar from the tap under the token `claude-bar`, then the updater proved a real update to `v0.1.2` by itself, and the owner upgraded to it with the fully qualified command.
+**Constraints:** Decisions → Who publishes, Gatekeeper, Install location; the incident fix above. Strict order, a technical dependency of the check rather than a permission gate: publish the renamed Cask (at `v0.1.1`) → owner migrates and installs via `stuchalin/claude-bar/claude-bar` and confirms → only then cut `v0.1.2` (a plain version bump) → updater commit → owner runs `brew upgrade --cask stuchalin/claude-bar/claude-bar`. If the owner is unavailable, the task stays open and `v0.1.2` is not cut ahead.
+**History (superseded, kept as evidence):** the first sequence (install `v0.1.0` → cut `v0.1.1` → updater commit `ec7d42d` → bare `brew upgrade --cask claudebar`) failed at the upgrade step as described above.
 **Done when:**
-- [ ] tap repository created and pushed with the `v0.1.0` Cask; a `workflow_dispatch` run succeeds (run URL)
-- [ ] owner: install from the tap (old `~/Applications` copy quit first) runs the brew copy from `/Applications` with `CFBundleShortVersionString` 0.1.0, live data, settings and history kept; whether "Open Anyway" was needed is recorded
-- [ ] after that confirmation, release `v0.1.1` is cut and the updater commits the new version and hash by itself (commit URL)
-- [ ] owner: `brew upgrade --cask claudebar` runs 0.1.1 with data kept; launch at login re-enabled from the brew copy and checked after a logout/login; the old `~/Applications` copy removed
+- [x] tap repository created and pushed with the `v0.1.0` Cask; a `workflow_dispatch` run succeeds (run URL) — https://github.com/Stuchalin/homebrew-claude-bar/actions/runs/39033211630
+- [x] owner: first install from the tap (old token) ran 0.1.0 from `/Applications` with live data, settings and history kept; "Open Anyway" was needed and a Keychain prompt appeared — historical, 2026-10-17
+- [x] renamed Cask `claude-bar` (with `conflicts_with cask: "claudebar"`) published; updater and tests follow the new token
+- [ ] owner: after `brew uninstall --cask claudebar` (no `--zap`), `brew install --cask stuchalin/claude-bar/claude-bar` runs 0.1.1 with the evidence listed in the incident fix; data and settings kept
+- [ ] after that confirmation, release `v0.1.2` is cut and the updater commits the new version and hash by itself (commit URL)
+- [ ] owner: `brew upgrade --cask stuchalin/claude-bar/claude-bar` runs 0.1.2 with the same evidence; launch at login re-enabled from the brew copy and checked after a logout/login; the old `~/Applications` copy removed
 
 ### Task 7: Verify acceptance and documentation
 - [ ] every story and every Done-when above holds, owner-confirmed where marked; anything SKIPPED stays listed as outstanding rather than counted as met
