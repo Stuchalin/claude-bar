@@ -167,8 +167,8 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Starting points:** CodexBar `Sources/CodexBar/IconRenderer.swift` (PixelGrid, bar rects, alphas, stale dimming).
 **Constraints:** Decisions → Icon, Owner acceptance, License. Template image; fill = remaining.
 **Done when:**
-- [ ] deterministic raster tests at 1x and 2x for 0 / 50 / 100 / unknown / stale, including no logo pixels inside the knockout zone
-- [ ] VoiceOver label states both percentages or the unknown/stale condition
+- [x] deterministic raster tests at 1x and 2x for 0 / 50 / 100 / unknown / stale, including no logo pixels inside the knockout zone
+- [x] VoiceOver label states both percentages or the unknown/stale condition
 - [ ] owner inspected the icon on light and dark menu bars next to CodexBar; approved alpha/gap or recorded deltas
 
 ### Task 8: Usage history charts submenu

@@ -7,7 +7,8 @@ header comment.
 
 Source: https://github.com/steipete/CodexBar, commit `a91669f2ff972ac2a549ed8c20725fdc1a510194`.
 Adapted in `Sources/ClaudeBarCore/Menu/UsagePace.swift`, `Sources/ClaudeBarCore/Menu/UsageFormatter.swift`,
-`Sources/ClaudeBar/MenuCard/UsageProgressBar.swift` and `Sources/ClaudeBar/MenuCard/MenuCardView.swift`.
+`Sources/ClaudeBarCore/Icon/MenuBarIconRenderer.swift`, `Sources/ClaudeBar/MenuCard/UsageProgressBar.swift` and
+`Sources/ClaudeBar/MenuCard/MenuCardView.swift`.
 
 ```
 MIT License

@@ -3,7 +3,7 @@ import ClaudeBarCore
 import Observation
 import SwiftUI
 
-/// Owns the status item (placeholder title until the icon task) and its menu: the CodexBar-style
+/// Owns the status item (the two-bar icon with the Claude watermark) and its menu: the CodexBar-style
 /// Claude card, the next attempt time, the history health row, Refresh, Settings… and Quit.
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
@@ -14,6 +14,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let onOpenSettings: () -> Void
     private let onQuit: () -> Void
     private var lastHistoryMessage: String?
+    private var lastIconModel: MenuBarIconModel?
 
     init(
         coordinator: RefreshCoordinator,
@@ -28,12 +29,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
-        if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "ClaudeBar")
-            image?.isTemplate = true
-            button.image = image
-            button.imagePosition = .imageLeading
-        }
+        statusItem.button?.imagePosition = .imageOnly
         menu.delegate = self
         menu.autoenablesItems = false
         statusItem.menu = menu
@@ -51,10 +47,34 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func render(_ status: RefreshStatus, historyMessage: String?) {
-        let title = RefreshStatusText.statusTitle(status)
-        statusItem.button?.title = " " + title
-        statusItem.button?.toolTip = "ClaudeBar — \(title)"
+        renderIcon(MenuBarIconModel(status: status))
         rebuildMenu(status, historyMessage: historyMessage)
+    }
+
+    private func renderIcon(_ model: MenuBarIconModel) {
+        guard let button = statusItem.button else { return }
+        if model != lastIconModel {
+            lastIconModel = model
+            button.image = Self.templateImage(model)
+        }
+        button.title = ""
+        button.toolTip = model.accessibilityLabel
+        button.setAccessibilityLabel(model.accessibilityLabel)
+    }
+
+    /// An 18×18 pt template image with 1× and 2× bitmaps, so neither scale is resampled.
+    private static func templateImage(_ model: MenuBarIconModel) -> NSImage {
+        let size = NSSize(width: MenuBarIconRenderer.sizePoints, height: MenuBarIconRenderer.sizePoints)
+        let image = NSImage(size: size)
+        for scale in [1, 2] {
+            guard let raster = MenuBarIconRenderer.render(model, scale: scale) else { continue }
+            let rep = NSBitmapImageRep(cgImage: raster.image)
+            rep.size = size
+            image.addRepresentation(rep)
+        }
+        image.isTemplate = true
+        image.accessibilityDescription = model.accessibilityLabel
+        return image
     }
 
     private func rebuildMenu(_ status: RefreshStatus, historyMessage: String?) {
