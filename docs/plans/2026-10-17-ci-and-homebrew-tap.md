@@ -91,13 +91,19 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 
 ### Task 4: Tap with the Cask
 **Discuss:** yes
+
+**Agreed approach (Claude and Codex, 2026-10-17):**
+- New repo `/Users/denisstuchalin/work/sdf/homebrew-claude-bar` (`git init -b main`) with `Casks/claudebar.rb` and `README.md`; not pushed here (Task 6 publishes).
+- Cask: `version "0.1.0"`, `sha256` of the v0.1.0 zip, `url "https://github.com/Stuchalin/claude-bar/releases/download/v#{version}/ClaudeBar-#{version}.zip"`, `name`, `desc`, `homepage`, `livecheck` (`url :url`, `strategy :github_latest`), `depends_on macos: :sonoma` (string comparison form is deprecated in Homebrew's `MacOSRequirement.parse`; CodexBar's cask uses `:sonoma`), `app "ClaudeBar.app"`, `uninstall quit: "ru.sdfpro.ClaudeBar"`, `zap trash:` Application Support and the preferences plist (Keychain item untouched), a caveat pointing to Privacy & Security → Open Anyway. No `auto_updates`, no postflight.
+- Validation: `brew style` on the working file; for audit a temporary committed snapshot, a local two-argument `brew tap stuchalin/claude-bar <path>` only if that tap did not already exist, explicit trust of only `stuchalin/claude-bar/claudebar`, confirm the audited Cask equals the working file, `brew audit --cask --online stuchalin/claude-bar/claudebar` as the required audit and `--new` recorded separately with signing findings documented (expected by the Gatekeeper decision), then remove only the tap and trust this validation created.
+- The Cask `sha256` equals the v0.1.0 sidecar and the downloaded zip's digest.
 **Goal:** a local tap repository at `/Users/denisstuchalin/work/sdf/homebrew-claude-bar` with `Casks/claudebar.rb` for release `v0.1.0` and a short README with install, upgrade and the Gatekeeper caveat.
 **Starting points:** homebrew-weeek-cli `Formula/weeek.rb`; docs.brew.sh Cask Cookbook.
 **Constraints:** Decisions → Cask, Gatekeeper, Install location. The approach agreement fixes the stanzas (`version`, `sha256`, `url`, `name`, `desc`, `homepage`, `depends_on macos`, `app`, `caveats`, `zap` for `~/Library/Application Support/ClaudeBar` and the preferences domain; the Keychain item stays the user's) and `livecheck` if useful.
 **Done when:**
-- [ ] `brew style` and `brew audit --cask` on the local tap pass, or each remaining offense is explained
-- [ ] the Cask's `sha256` equals the `v0.1.0` sidecar and the downloaded zip
-- [ ] the tap README has install and upgrade commands, the caveat, and that the app lives in `/Applications`
+- [x] `brew style` and `brew audit --cask` on the local tap pass, or each remaining offense is explained
+- [x] the Cask's `sha256` equals the `v0.1.0` sidecar and the downloaded zip
+- [x] the tap README has install and upgrade commands, the caveat, and that the app lives in `/Applications`
 
 ### Task 5: Tap auto-updater
 **Goal:** `scripts/update-cask.sh` renders the Cask from the latest ClaudeBar release, verifies the zip digest against its sidecar, and rewrites only on change; `.github/workflows/update-cask.yml` runs it on a schedule and on demand and commits as `github-actions[bot]`.
