@@ -110,9 +110,9 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 **Starting points:** homebrew-weeek-cli `scripts/update-formula.sh`, `.github/workflows/update-formula.yml`.
 **Constraints:** Decisions → Pattern source (strict tag grammar), Scheduled updater lifetime. The zip is always verified before any rewrite. Tests use stubbed `gh`/`curl` fixtures, never real publications.
 **Done when:**
-- [ ] fixture tests cover: change → rewrite; repeat → no-op; malformed tag, digest mismatch, missing asset and network failure → non-zero exit with the Cask unchanged
-- [ ] the workflow parses (`actionlint` or recorded reason); `bash -n`/`shellcheck` clean
-- [ ] the tap README explains re-enabling the schedule after GitHub disables it and running it manually
+- [x] fixture tests cover: change → rewrite; repeat → no-op; malformed tag, digest mismatch, missing asset and network failure → non-zero exit with the Cask unchanged
+- [x] the workflow parses (`actionlint` or recorded reason); `bash -n`/`shellcheck` clean
+- [x] the tap README explains re-enabling the schedule after GitHub disables it and running it manually
 
 ### Task 6: Publish the tap; OWNER-RUN install and upgrade check
 **Executor:** the primary agent publishes the tap and cuts the second release unattended; the owner performs the install and upgrade checks on their Mac.
