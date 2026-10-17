@@ -8,7 +8,7 @@ shared secret, for Macs without local Claude OAuth credentials.
 ## Requirements
 
 - macOS 14+.
-- Swift 6.2+; Command Line Tools are enough. No third-party packages.
+- For source builds only: Swift 6.2+; Command Line Tools are enough. No third-party packages.
 - A running claude-code-proxy, its URL and shared secret.
 
 ## Install
@@ -18,6 +18,7 @@ Homebrew cask `claudebar` is a different app):
 
 ```bash
 brew install --cask stuchalin/claude-bar/claude-bar
+brew update
 brew upgrade --cask stuchalin/claude-bar/claude-bar
 ```
 
@@ -25,13 +26,19 @@ If ClaudeBar was installed under the old token `claudebar`, see the
 [tap README](https://github.com/Stuchalin/homebrew-claude-bar#migrating-from-the-old-claudebar-token)
 for the manual migration.
 
-The app lives in `/Applications/ClaudeBar.app`. It is ad-hoc signed and not notarized, so
-macOS may block the first launch; allow it under **System Settings → Privacy & Security →
-Open Anyway**. A copy left in `~/Applications` by an earlier local install can be removed
-once the `/Applications` copy works; history and the Keychain secret are kept outside the app.
+The app lives in `/Applications/ClaudeBar.app` and is ad-hoc signed, not notarized.
+The tested Homebrew install required **System Settings → Privacy & Security → Open Anyway**
+on first launch. Expect a Keychain password prompt to allow access to the saved proxy secret
+on installation or upgrade.
 
-Launch ClaudeBar, open **Settings…**, enter the proxy URL and secret, then **Save**. The
-secret is stored in Keychain.
+For first-time setup, open **Settings…**, enter the proxy URL and secret, then **Save**.
+The secret is stored in Keychain. When moving from `~/Applications`, quit the old copy,
+launch the Homebrew copy and re-enable **Launch at login** in Settings. Remove the old copy
+once the Homebrew copy works.
+
+Uninstalling without `--zap` keeps history, preferences and the Keychain secret. `--zap`
+removes history and preferences but keeps the secret; see the
+[tap's uninstall instructions](https://github.com/Stuchalin/homebrew-claude-bar#uninstall).
 
 ## Build from source
 
@@ -71,9 +78,6 @@ Assets/AppIcon/build.sh
 
 ClaudeBar cannot detect an account switch behind the proxy. Use **Settings… →
 Clear history…** after switching accounts to avoid mixing their history.
-
-The app is ad-hoc signed. An update may prompt for Keychain access again; access
-across updates has not been verified.
 
 Parts of ClaudeBar are adapted from CodexBar (MIT). See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
