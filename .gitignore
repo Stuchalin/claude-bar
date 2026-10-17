@@ -17,6 +17,10 @@ Assets/AppIcon/.build/
 .agents/skills/
 skills-lock.json
 
+# Local-only agent run state (peer-planning, revmux)
+/.peer-planning/
+/.revmux/tasks/
+
 # Per-developer agent settings
 .claude/settings.local.json
 CLAUDE.local.md

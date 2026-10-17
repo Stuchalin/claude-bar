@@ -45,6 +45,10 @@ Installation quits and replaces the existing app. With a full Xcode toolchain, u
 versions to `X.Y.Z` and checks the zip with `Scripts/verify_release.sh`;
 `Scripts/test_release.sh dist/ClaudeBar-X.Y.Z.zip` runs that check against tampered copies.
 
+GitHub Actions (`.github/workflows/ci.yml`) builds and tests every push and pull request.
+Pushing a `vX.Y.Z` tag also builds the universal zip and publishes it with its `.sha256` as a
+GitHub release.
+
 Downloaded ZIP builds were tested with quarantine removed; see the
 [installation test notes](docs/smoke-gate.md).
 

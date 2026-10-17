@@ -62,15 +62,22 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 
 ### Task 2: CI workflow for checks and tagged releases
 **Discuss:** yes
+
+**Agreed approach (Claude and Codex, 2026-10-17):**
+- One workflow `.github/workflows/ci.yml`: `push` on all branches and `v*` tags, `pull_request`; top-level `permissions: contents: read`.
+- Job `checks` on `macos-15-arm64` with job-level `DEVELOPER_DIR=/Applications/Xcode_26.2.app/Contents/Developer` (image re-verified 2026-10-17; Apple lists Swift 6.2.3): checkout `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1` (same as weeek, confirmed upstream); fail fast if the Xcode path is missing; print `xcodebuild -version` and `swift --version`; `make build`; `make test TEST_FLAGS=`; per-file syntax loop `for f in Scripts/*.sh; do bash -n "$f"; done` (a single `bash -n a b` checks only `a`).
+- Job `release`: tag-gated (`startsWith(github.ref, 'refs/tags/v')`), `needs: checks`, same runner and developer dir, `permissions: contents: write`; validate `GITHUB_REF_NAME` against the strict grammar; `make release VERSION=${GITHUB_REF_NAME#v}` (ends with `verify_release.sh` against the tag-derived version); `Scripts/test_release.sh` on the zip; guard that exactly the zip and its sidecar exist; `gh release create "$GITHUB_REF_NAME" <zip> <sidecar> --verify-tag --generate-notes` with `GH_TOKEN`.
+- Both architectures are built on the arm64 runner; negative release tests on tags only; no caching; no artifact hop (build and publish in one job).
+- `.gitignore` gains `/.peer-planning/` and `/.revmux/tasks/`; README gets one or two lines on CI and cutting a release by tag.
 **Goal:** `.github/workflows/ci.yml` runs build and tests on every push and pull request, and on a strict `vX.Y.Z` tag builds Task 1's release artifact and publishes a GitHub release with the zip and its sidecar; `.gitignore` gains the local-only paths.
 **Starting points:** weeek-cli `.github/workflows/ci.yml`; `Makefile`; Task 1's release entry point.
 **Constraints:** Decisions → Pattern source, Toolchain, Version and build number, Local-only paths. The approach agreement fixes action SHAs, caching (if any), and how the tag is checked against the built bundle version. Release jobs never run on non-tag pushes.
 **Done when:**
-- [ ] the workflow parses and passes `actionlint` (or the reason is recorded)
-- [ ] checks job pins the Xcode 26.2 developer dir, logs `xcodebuild -version` and `swift --version`, runs build and `make test TEST_FLAGS=`
-- [ ] release jobs are gated on the strict tag grammar and need the checks; the release uploads exactly the zip and its sidecar via `gh release create --verify-tag --generate-notes`, after confirming the bundle version equals the tag
-- [ ] `.gitignore` contains `/.peer-planning/` and `/.revmux/tasks/`
-- [ ] README says CI exists and that pushing a `vX.Y.Z` tag cuts a release
+- [x] the workflow parses and passes `actionlint` (or the reason is recorded)
+- [x] checks job pins the Xcode 26.2 developer dir, logs `xcodebuild -version` and `swift --version`, runs build and `make test TEST_FLAGS=`
+- [x] release jobs are gated on the strict tag grammar and need the checks; the release uploads exactly the zip and its sidecar via `gh release create --verify-tag --generate-notes`, after confirming the bundle version equals the tag
+- [x] `.gitignore` contains `/.peer-planning/` and `/.revmux/tasks/`
+- [x] README says CI exists and that pushing a `vX.Y.Z` tag cuts a release
 
 ### Task 3: Publish the repository and the first release
 **Executor:** the primary agent (orchestrator), not the implementer subagent; authorized by Decisions → Who publishes.
