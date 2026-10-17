@@ -69,7 +69,8 @@ from the proxy or from Anthropic; known proxy error bodies get a specific hint.
 ## What the menu shows
 
 - **Menu bar icon** — two bars, top = session, bottom = weekly, filled by the share **remaining**,
-  over a faint Claude starburst. A stale value is drawn dimmed; an unknown value is a dashed
+  with a Claude starburst at 70 % opacity to their right, not overlapping them (24×18 pt). A
+  stale value is drawn dimmed; an unknown value is a dashed
   hollow outline, distinct from 0 %. The tooltip and VoiceOver label read both values.
 - **Quota cards** — Session, Weekly and each model-scoped weekly limit, each with "NN% left", a
   progress bar, reset time and pace. A value from an earlier fetch is marked "Stale · seen …";

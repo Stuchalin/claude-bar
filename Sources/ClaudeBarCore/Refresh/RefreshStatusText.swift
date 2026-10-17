@@ -1,59 +1,13 @@
 import Foundation
 
-/// Wording for the placeholder status item and menu (replaced by the cards and icon of later
-/// tasks). Times are formatted by the caller.
+/// Shared wording for the menu and the icon: remaining percent, the card header's updated and
+/// error lines, and the footer's timing line. Times are formatted by the caller.
 public enum RefreshStatusText {
     public typealias TimeFormat = (Date) -> String
 
     /// Remaining share of a window in whole percent, clamped to 0…100.
     public static func remainingPercent(_ window: UsageWindow) -> Int {
         Int(max(0, min(100, 100 - window.usedPercent)).rounded())
-    }
-
-    /// `S 88% · W 99%` (remaining); `—` when unknown or waiting, `*` after a stale value.
-    public static func statusTitle(_ status: RefreshStatus) -> String {
-        "\(titleComponent("S", status.session)) · \(titleComponent("W", status.weekly))"
-    }
-
-    static func titleComponent(_ prefix: String, _ state: MetricState) -> String {
-        switch state.presentation {
-        case let .fresh(value):
-            value.window.map { "\(prefix) \(remainingPercent($0))%" } ?? "\(prefix) —"
-        case let .stale(value, _):
-            value.window.map { "\(prefix) \(remainingPercent($0))%*" } ?? "\(prefix) —"
-        case .waitingForFreshData, .unavailable:
-            "\(prefix) —"
-        }
-    }
-
-    /// `Session: 88% left · resets 14:30`, with the stale, waiting and unavailable variants.
-    public static func metricLine(title: String, state: MetricState, time: TimeFormat) -> String {
-        switch state.presentation {
-        case let .fresh(value):
-            "\(title): \(describe(value, time: time))"
-        case let .stale(value, lastSeenAt):
-            "\(title): \(describe(value, time: time)) (stale, seen \(time(lastSeenAt)))"
-        case let .waitingForFreshData(lastSeenAt):
-            "\(title): reset passed, waiting for fresh data (seen \(time(lastSeenAt)))"
-        case .unavailable:
-            "\(title): unavailable"
-        }
-    }
-
-    private static func describe(_ value: MetricValue, time: TimeFormat) -> String {
-        switch value {
-        case let .window(window):
-            let reset = switch window.reset {
-            case let .at(date): " · resets \(time(date))"
-            case .notStarted: " · not started"
-            case .unknown: " · reset unknown"
-            }
-            return "\(remainingPercent(window))% left\(reset)"
-        case .extra(.enabled):
-            return "enabled"
-        case .extra:
-            return "disabled"
-        }
     }
 
     /// `Updated 14:05`, `Stale — last updated 14:05`, `Refreshing…` or `Not updated yet`.

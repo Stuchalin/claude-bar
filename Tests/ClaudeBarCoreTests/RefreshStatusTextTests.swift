@@ -16,29 +16,6 @@ struct RefreshStatusTextTests {
         #expect(RefreshStatusText.remainingPercent(F.window(used: 130)) == 0)
     }
 
-    @Test("title shows remaining percent, a dash when unknown and a star when stale")
-    func title() {
-        var status = RefreshStatus()
-        #expect(RefreshStatusText.statusTitle(status) == "S — · W —")
-        status.session = MetricState(presentation: .fresh(.window(F.window(used: 12))), allowsForecast: true)
-        status.weekly = MetricState(presentation: .stale(.window(F.window(used: 1)), lastSeenAt: F.t0), allowsForecast: false)
-        #expect(RefreshStatusText.statusTitle(status) == "S 88% · W 99%*")
-    }
-
-    @Test("metric lines")
-    func metricLines() {
-        let window = F.window(used: 12, reset: .at(F.t0.addingTimeInterval(60)))
-        let fresh = MetricState(presentation: .fresh(.window(window)), allowsForecast: true)
-        #expect(RefreshStatusText.metricLine(title: "Session", state: fresh, time: time) == "Session: 88% left · resets t+60")
-        let stale = MetricState(presentation: .stale(.window(window), lastSeenAt: F.t0), allowsForecast: false)
-        #expect(RefreshStatusText.metricLine(title: "Session", state: stale, time: time)
-            == "Session: 88% left · resets t+60 (stale, seen t+0)")
-        let waiting = MetricState(presentation: .waitingForFreshData(lastSeenAt: F.t0), allowsForecast: false)
-        #expect(RefreshStatusText.metricLine(title: "Weekly", state: waiting, time: time)
-            == "Weekly: reset passed, waiting for fresh data (seen t+0)")
-        #expect(RefreshStatusText.metricLine(title: "Weekly", state: .unavailable, time: time) == "Weekly: unavailable")
-    }
-
     @Test("updated line and timing wording per mode")
     func updatedAndTiming() {
         var status = RefreshStatus()

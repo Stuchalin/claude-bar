@@ -39,6 +39,11 @@ public final class UsageClient: Sendable {
         endpoint: ProxyEndpoint,
         secrets: any SecretStore
     ) async throws(UsageFetchError) -> UsageSnapshot {
+        try await fetchUsage(endpoint: endpoint, secret: Self.readSecret(from: secrets))
+    }
+
+    /// The stored secret; a missing or empty one is `missingSecret`, a failed read `secretUnreadable`.
+    static func readSecret(from secrets: any SecretStore) throws(UsageFetchError) -> String {
         let secret: String?
         do {
             secret = try secrets.read()
@@ -46,7 +51,7 @@ public final class UsageClient: Sendable {
             throw .secretUnreadable(error)
         }
         guard let secret, !secret.isEmpty else { throw .missingSecret }
-        return try await fetchUsage(endpoint: endpoint, secret: secret)
+        return secret
     }
 
     public func fetchUsage(endpoint: ProxyEndpoint, secret: String) async throws(UsageFetchError) -> UsageSnapshot {

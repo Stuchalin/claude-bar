@@ -385,7 +385,6 @@ struct RefreshCoordinatorTests {
         #expect(changed.isRaised)
         #expect(h.status.session == MetricState(presentation: .waitingForFreshData(lastSeenAt: h.at(0)), allowsForecast: false))
         #expect(h.status.weekly == MetricState(presentation: .fresh(.window(weekly)), allowsForecast: true))
-        #expect(RefreshStatusText.statusTitle(h.status) == "S — · W 95%")
         #expect(h.fetcher.callCount == 1)
     }
 
@@ -422,7 +421,6 @@ struct RefreshCoordinatorTests {
         #expect(scoped[1].state == .unavailable)
         #expect(scoped[2].state.presentation == .stale(.window(F.scoped("a", used: 3).window!), lastSeenAt: h.at(0)))
         #expect(scoped[2].displayName == "A")
-        #expect(RefreshStatusText.statusTitle(h.status) == "S 80%* · W 93%")
 
         h.coordinator.trigger(.manualRefresh)
         await h.complete(call: 3, with: .success(F.snapshot(
@@ -523,7 +521,7 @@ struct RefreshCoordinatorTests {
         let store = SettingsStore(defaults: isolated.defaults)
         store.proxyURL = F.endpointA.normalizedString
         store.refreshInterval = interval
-        let model = SettingsModel(settings: store, secrets: InMemorySecretStore(secret: Fixture.dummy))
+        let model = SettingsModel(settings: store, secrets: h.secrets)
         h.coordinator.bind(to: model)
         model.loadDraft()
         return (model, isolated)
@@ -552,6 +550,41 @@ struct RefreshCoordinatorTests {
         #expect(h.fetcher.endpoints == [F.endpointA, F.endpointA, F.endpointB])
         await h.complete(call: 3, with: .success(F.snapshot(session: F.window(used: 70))))
         #expect(h.status.session.presentation == .fresh(.window(F.window(used: 70))))
+    }
+
+    @Test("an attempt started against URL A never sends the secret saved together with URL B")
+    func secretBoundToAttemptGeneration() async {
+        let h = RefreshHarness(interval: .fiveMinutes)
+        defer { h.stop() }
+        let (model, isolated) = boundSettings(h, interval: .fiveMinutes)
+        defer { withExtendedLifetime(isolated) {} }
+        await h.complete(call: 1, with: .success(F.snapshot()))
+        h.coordinator.trigger(.manualRefresh)
+        // Save as soon as attempt 2 has started, possibly before its request is under way.
+        await h.fetcher.waitForSecretReads(2)
+
+        model.draftURL = F.endpointB.normalizedString
+        model.draftSecret = Fixture.other
+        #expect(model.save())
+        #expect(h.secrets.storedSecret == Fixture.other)
+
+        await h.fetcher.waitForCalls(2)
+        h.fetcher.resolveNext(.success(F.snapshot()))
+        await h.complete(call: 3, with: .success(F.snapshot()))
+        #expect(h.fetcher.endpoints == [F.endpointA, F.endpointA, F.endpointB])
+        #expect(h.fetcher.sentSecrets == [Fixture.dummy, Fixture.dummy, Fixture.other])
+    }
+
+    @Test("a secret that cannot be read fails the attempt without a request")
+    func unreadableSecret() async throws {
+        let h = RefreshHarness(interval: .manual)
+        defer { h.stop() }
+        try h.secrets.delete()
+        h.coordinator.trigger(.manualRefresh)
+        await h.fetcher.waitForSecretReads(1)
+        while h.status.connection == .loading { await Task.yield() }
+        #expect(h.status.connection == .failed(.missingSecret))
+        #expect(h.fetcher.callCount == 0)
     }
 
     @Test("Save of a new URL or secret discards a late error of the old configuration", arguments: [true, false])

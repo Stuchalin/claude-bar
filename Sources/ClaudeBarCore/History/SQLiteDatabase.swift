@@ -106,8 +106,6 @@ final class SQLiteDatabase {
         }
     }
 
-    var lastInsertRowID: Int64 { handle.map { sqlite3_last_insert_rowid($0) } ?? 0 }
-
     /// Runs `body` inside `BEGIN IMMEDIATE … COMMIT`, rolling back when it throws or the commit fails.
     func immediateTransaction<T>(_ body: () throws -> T) throws -> T {
         try execute("BEGIN IMMEDIATE")

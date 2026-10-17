@@ -165,18 +165,26 @@ public final class RefreshCoordinator {
     }
 
     /// Starts the single in-flight request in its own task, so the driver keeps serving
-    /// presentation deadlines while the network is pending.
+    /// presentation deadlines while the network is pending. The secret is read here, on the main
+    /// actor, together with the endpoint and generation: a Save that writes a new secret commits
+    /// synchronously too, so an attempt never pairs the old URL with the new secret.
     private func startFetch() {
         guard let endpoint else { return }
         let attemptGeneration = generation
         let fetcher = fetcher
+        let secret: Result<String, UsageFetchError>
+        do throws(UsageFetchError) {
+            secret = try .success(fetcher.readSecret())
+        } catch {
+            secret = .failure(error)
+        }
         isInFlight = true
         lastAttemptAt = clock.now
         republish()
         fetchTask = Task { [weak self] in
             let result: Result<UsageSnapshot, UsageFetchError>
             do throws(UsageFetchError) {
-                result = try await .success(fetcher.fetchUsage(endpoint: endpoint))
+                result = try await .success(fetcher.fetchUsage(endpoint: endpoint, secret: secret.get()))
             } catch {
                 result = .failure(error)
             }

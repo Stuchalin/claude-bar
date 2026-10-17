@@ -92,7 +92,8 @@ final class ManualClock: RefreshClock, @unchecked Sendable {
     }
 }
 
-/// A fetcher whose calls suspend until the test resolves them, oldest first.
+/// A fetcher whose calls suspend until the test resolves them, oldest first. It reads the secret
+/// from `secrets` like the production fetcher and records the secret each call would send.
 final class ScriptedFetcher: UsageFetching, @unchecked Sendable {
     typealias Outcome = Result<UsageSnapshot, UsageFetchError>
 
@@ -101,21 +102,60 @@ final class ScriptedFetcher: UsageFetching, @unchecked Sendable {
         let continuation: CheckedContinuation<Outcome, Never>
     }
 
+    private struct Call {
+        let endpoint: ProxyEndpoint
+        let secret: String
+    }
+
+    let secrets: any SecretStore
     private let lock = NSLock()
     private var pending: [Pending] = []
     private var cancelledBeforeStart: Set<UUID> = []
-    private var calls: [ProxyEndpoint] = []
+    private var calls: [Call] = []
     private var callWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    private var reads = 0
+    private var readWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+
+    init(secrets: any SecretStore) {
+        self.secrets = secrets
+    }
 
     var callCount: Int { lock.withLock { calls.count } }
-    var endpoints: [ProxyEndpoint] { lock.withLock { calls } }
+    var endpoints: [ProxyEndpoint] { lock.withLock { calls.map(\.endpoint) } }
+    /// The secret each call would send, in call order.
+    var sentSecrets: [String] { lock.withLock { calls.map(\.secret) } }
 
-    func fetchUsage(endpoint: ProxyEndpoint) async throws(UsageFetchError) -> UsageSnapshot {
+    func readSecret() throws(UsageFetchError) -> String {
+        defer {
+            let ready = lock.withLock { () -> [CheckedContinuation<Void, Never>] in
+                reads += 1
+                let ready = readWaiters.filter { $0.count <= reads }.map(\.continuation)
+                readWaiters.removeAll { $0.count <= reads }
+                return ready
+            }
+            ready.forEach { $0.resume() }
+        }
+        return try UsageClient.readSecret(from: secrets)
+    }
+
+    /// Waits until at least `count` attempts have read their secret.
+    func waitForSecretReads(_ count: Int) async {
+        await withCheckedContinuation { continuation in
+            let done = lock.withLock {
+                if reads >= count { return true }
+                readWaiters.append((count, continuation))
+                return false
+            }
+            if done { continuation.resume() }
+        }
+    }
+
+    func fetchUsage(endpoint: ProxyEndpoint, secret: String) async throws(UsageFetchError) -> UsageSnapshot {
         let id = UUID()
         let outcome = await withTaskCancellationHandler {
             await withCheckedContinuation { (continuation: CheckedContinuation<Outcome, Never>) in
                 let (cancelled, ready) = lock.withLock { () -> (Bool, [CheckedContinuation<Void, Never>]) in
-                    calls.append(endpoint)
+                    calls.append(Call(endpoint: endpoint, secret: secret))
                     let isReady = { (waiter: (count: Int, continuation: CheckedContinuation<Void, Never>)) in
                         waiter.count <= self.calls.count
                     }
@@ -201,7 +241,8 @@ enum RefreshFixtures {
 @MainActor
 final class RefreshHarness {
     let clock = ManualClock(RefreshFixtures.t0)
-    let fetcher = ScriptedFetcher()
+    let secrets = InMemorySecretStore(secret: Fixture.dummy)
+    let fetcher: ScriptedFetcher
     let coordinator: RefreshCoordinator
 
     init(
@@ -209,6 +250,7 @@ final class RefreshHarness {
         endpoint: ProxyEndpoint? = RefreshFixtures.endpointA,
         history: any HistoryRecording = NoHistoryRecording()
     ) {
+        fetcher = ScriptedFetcher(secrets: secrets)
         coordinator = RefreshCoordinator(
             fetcher: fetcher, clock: clock, history: history, endpoint: endpoint, secretRevision: 0, interval: interval
         )
