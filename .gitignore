@@ -21,7 +21,8 @@ skills-lock.json
 /.peer-planning/
 /.revmux/tasks/
 
-# Per-developer agent settings
+# Per-developer agent settings and local agent definitions
+.claude/agents/
 .claude/settings.local.json
 CLAUDE.local.md
 
