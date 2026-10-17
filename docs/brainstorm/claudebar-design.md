@@ -1,5 +1,8 @@
 # ClaudeBar — черновик дизайна (brainstorm)
 
+> **Background only.** This is the design-phase brainstorm. Where it differs from
+> [README.md](../../README.md) or the code, README.md and the code win.
+
 Статус: обсуждение технических решений (Claude ↔ Codex). Бизнес-решения уже приняты пользователем.
 
 ## Задача (принято пользователем)
