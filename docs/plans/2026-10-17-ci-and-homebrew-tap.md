@@ -129,12 +129,12 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 - [x] owner: first install from the tap (old token) ran 0.1.0 from `/Applications` with live data, settings and history kept; "Open Anyway" was needed and a Keychain prompt appeared — historical, 2026-10-17
 - [x] renamed Cask `claude-bar` (with `conflicts_with cask: "claudebar"`) published; updater and tests follow the new token
 - [x] owner: after `brew uninstall --cask claudebar` (no `--zap`), `brew install --cask stuchalin/claude-bar/claude-bar` runs 0.1.1 with the evidence listed in the incident fix; data and settings kept — 2026-10-17: `brew list --cask` shows `claude-bar`, bundle id `ru.sdfpro.ClaudeBar`, version 0.1.1, data and settings OK
-- [ ] after that confirmation, release `v0.1.2` is cut and the updater commits the new version and hash by itself (commit URL)
-- [ ] owner: `brew upgrade --cask stuchalin/claude-bar/claude-bar` runs 0.1.2 with the same evidence; launch at login re-enabled from the brew copy and checked after a logout/login; the old `~/Applications` copy removed
+- [x] after that confirmation, release `v0.1.2` is cut and the updater commits the new version and hash by itself (commit URL) — release run 39035647865; updater run 39035836514 committed https://github.com/Stuchalin/homebrew-claude-bar/commit/f97b3db (github-actions[bot]); sha256 eed51c58… = sidecar
+- [x] owner: `brew upgrade --cask stuchalin/claude-bar/claude-bar` runs 0.1.2 with the same evidence; launch at login re-enabled from the brew copy and checked after a logout/login; the old `~/Applications` copy removed — 2026-10-17: `claude-bar`, `ru.sdfpro.ClaudeBar`, 0.1.2; owner: data, launch at login after logout/login and old copy removal all OK
 
 ### Task 7: Verify acceptance and documentation
-- [ ] every story and every Done-when above holds, owner-confirmed where marked; anything SKIPPED stays listed as outstanding rather than counted as met
-- [ ] ClaudeBar README and the tap README describe the current state only; results recorded in the final commit message
+- [x] every story and every Done-when above holds, owner-confirmed where marked; anything SKIPPED stays listed as outstanding rather than counted as met
+- [x] ClaudeBar README and the tap README describe the current state only; results recorded in the final commit message
 
 ## Post-Completion
 - Consider a Developer ID certificate and notarization if Gatekeeper friction or Keychain re-prompts become annoying.
