@@ -17,6 +17,7 @@ BUNDLE_ID="ru.sdfpro.ClaudeBar"
 MARKETING_VERSION="0.1.0"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M%S)}"
 APP="$ROOT/build/$APP_NAME.app"
+APP_ICON="$ROOT/Assets/AppIcon/$APP_NAME.icns"
 INSTALL_DIR="$HOME/Applications"
 INSTALLED_APP="$INSTALL_DIR/$APP_NAME.app"
 
@@ -35,6 +36,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
 # Adapted CodexBar code ships with its MIT notice.
 cp "$ROOT/THIRD_PARTY_NOTICES.md" "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
+cp "$APP_ICON" "$APP/Contents/Resources/$APP_NAME.icns"
 
 # NSAllowsArbitraryLoads permits a plain-HTTP proxy (the UI warns about it). NSAllowsLocalNetworking
 # is deliberately absent: when present, it makes the system ignore NSAllowsArbitraryLoads.
@@ -47,6 +49,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleDisplayName</key><string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key><string>${BUNDLE_ID}</string>
     <key>CFBundleExecutable</key><string>${APP_NAME}</string>
+    <key>CFBundleIconFile</key><string>${APP_NAME}</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleShortVersionString</key><string>${MARKETING_VERSION}</string>
@@ -69,6 +72,10 @@ codesign --force --sign - --identifier "$BUNDLE_ID" --timestamp=none "$APP"
 codesign --verify --strict "$APP"
 if ! cmp -s "$ROOT/THIRD_PARTY_NOTICES.md" "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"; then
   echo "error: THIRD_PARTY_NOTICES.md is missing from $APP" >&2
+  exit 1
+fi
+if ! cmp -s "$APP_ICON" "$APP/Contents/Resources/$APP_NAME.icns"; then
+  echo "error: $APP_NAME.icns is missing from $APP" >&2
   exit 1
 fi
 echo "Built $APP (version $MARKETING_VERSION, build $BUILD_NUMBER)"

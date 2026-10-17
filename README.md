@@ -34,6 +34,10 @@ make install    # Scripts/package_app.sh install: the above, then installs ~/App
   bundle ID as its identifier. Install, launch at login and live data were confirmed by the owner
   (`docs/smoke-gate.md`); whether Keychain access survives a rebuild of an ad-hoc-signed bundle
   was not tested and may require re-approving the Keychain prompt after an update.
+- The app icon (`Assets/AppIcon/ClaudeBar.icns`) was drawn for this project: an own vector
+  starburst in `#CC7C5E`, the colour CodexBar uses for Claude, in a composition modelled on
+  CodexBar's app icon. Regenerate it from `Assets/AppIcon/render.swift` with
+  `Assets/AppIcon/build.sh`.
 
 ## Settings
 

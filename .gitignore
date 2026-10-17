@@ -6,6 +6,9 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 
+# App icon build intermediates (Assets/AppIcon/build.sh)
+Assets/AppIcon/.build/
+
 # Locally installed agent skills (skills.sh) and their lockfile
 .claude/skills/
 .agents/skills/
