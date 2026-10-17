@@ -79,7 +79,7 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 **Constraints:** Decisions → Stack, Packaging, Secret storage, Deferred. The approach agreement fixes bundle ID, install path, signing mode and the credential-store protocol. No network fetching in this task. Routine tests use an injected fake credential store. URL validation rejects credentials in URL/query; URL joining with a path prefix is explicit. The existing `.gitignore` already covers build output and local skills; extend it only if needed.
 **Done when:**
 - [x] `swift build`, `swift test` and `Scripts/package_app.sh` succeed from a clean checkout, and Execution → Validation states the exact test command
-- [ ] launching the installed bundle shows a status item and no Dock icon
+- [x] launching the installed bundle shows a status item and no Dock icon
 - [x] Settings persists the URL; the secret round-trips through the credential-store protocol
 - [x] tests pin URL validation/joining and Settings persistence against the fake store
 
@@ -91,10 +91,10 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Starting points:** `Scripts/package_app.sh`, the Settings/credential-store code from Task 1.
 **Constraints:** use a dummy Keychain value, never the real secret, in tests and evidence; clean the test item afterwards. Test two distinguishable builds (e.g. different build number) installed at the same stable path, and the exact artifact the login item registers. A new Keychain prompt per rebuild is not PASS. BLOCKED pauses Tasks 3+; setting up a stable local signing identity or changing storage requires an owner ruling, and stable signing is not promised to fix `SMAppService` (Apple TN2206).
 **Done when:**
-- [ ] owner confirmed the installed ~/Applications/ClaudeBar.app shows a visible status item, its menu opens Settings and Quit, and there is no Dock icon; in Settings, Cmd-V and Cmd-A work in both the URL and secret fields and Cmd-C works in the URL field (the secure field need not allow copying)
-- [ ] build A installed, dummy secret saved; build B installed at the same path reads it without a prompt (or the failure is recorded)
-- [ ] Launch at login: enable → logout/login → app starts; disable → logout/login → app does not start
-- [ ] verdict, builds tested and any signing change recorded in `docs/smoke-gate.md`
+- [x] owner confirmed the installed ~/Applications/ClaudeBar.app shows a visible status item, its menu opens Settings and Quit, and there is no Dock icon; in Settings, Cmd-V and Cmd-A work in both the URL and secret fields and Cmd-C works in the URL field (the secure field need not allow copying)
+- [x] build A installed, dummy secret saved; build B installed at the same path reads it without a prompt (or the failure is recorded) — SKIPPED by owner ruling 2026-10-17 (distribution via Homebrew tap later); recorded as OWNER-ACCEPTED LIMITATION in docs/smoke-gate.md
+- [x] Launch at login: enable → logout/login → app starts; disable → logout/login → app does not start
+- [x] verdict, builds tested and any signing change recorded in `docs/smoke-gate.md`
 
 ### Task 3: Usage client and snapshot model
 **Goal:** `ClaudeBarCore` fetches `{proxy}/api/oauth/usage` and returns either a validated `UsageSnapshot` (session, weekly, scoped weeklies, extra usage, each independently available or unavailable) or a typed error carrying a user-facing hint.
@@ -126,7 +126,7 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Done when:**
 - [x] fake-clock tests pin: coalescing without perpetual trailing requests, menu-open throttle, wake fetch, cooldown blocking every trigger, bounded backoff, manual mode (no timer/launch/menu/wake fetch, "retry available at" wording), late-response discard on URL and on secret change, old-source hiding on URL change only
 - [x] tests pin states first-load / first-failure / failure-with-cache / fresh, stale-by-age, per-metric availability, and a cached window passing its reset with no fetch → waiting-for-fresh-data, no forecast
-- [ ] the packaged app shows real percentages from the proxy
+- [x] the packaged app shows real percentages from the proxy
 
 ### Task 5: SQLite history wired to the coordinator
 **Discuss:** yes
@@ -159,7 +159,7 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Done when:**
 - [x] pace tests pin zero elapsed, 0 % and 100 % used, past and far-future reset, threshold edges 2/6/12, session-only 3 % guard
 - [x] formatter and card-visibility tests pin reset/pace wording and the visibility rules above
-- [ ] owner compared the menu with CodexBar's Codex card in light and dark mode; approval or rejected deltas recorded
+- [x] owner compared the menu with CodexBar's Codex card in light and dark mode; approval or rejected deltas recorded
 
 ### Task 7: Menu bar icon with Claude watermark
 **Executor:** implementer; owner visual approval recorded by the primary agent.
@@ -169,7 +169,7 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Done when:**
 - [x] deterministic raster tests at 1x and 2x for 0 / 50 / 100 / unknown / stale, including no starburst pixels inside the bar zones (bars plus a 1 px margin)
 - [x] VoiceOver label states both percentages or the unknown/stale condition
-- [ ] owner inspected the icon on light and dark menu bars next to CodexBar; approved alpha/gap or recorded deltas
+- [x] owner inspected the icon on light and dark menu bars next to CodexBar; approved alpha/gap or recorded deltas
 
 ### Task 8: Usage history charts submenu
 **Executor:** implementer; owner visual approval recorded by the primary agent.
@@ -179,7 +179,7 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 **Done when:**
 - [x] chart-model tests on synthetic fixtures pin current-window filtering, segment splits at breaks/gaps, a reset, multiple past windows, unobserved windows, all-missing data, downsampling
 - [x] a debug fixture mode lets the owner see both charts populated without waiting for real history
-- [ ] owner reviewed both charts on the fixtures (real history optional); approval or rejected deltas recorded
+- [x] owner reviewed both charts on the fixtures (real history optional); approval or rejected deltas recorded
 
 ### Task 9: Documentation and final acceptance
 **Executor:** primary agent; owner confirms the story checks.

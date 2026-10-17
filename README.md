@@ -31,9 +31,9 @@ make install    # Scripts/package_app.sh install: the above, then installs ~/App
 - `install` quits a running copy first and replaces `~/Applications/ClaudeBar.app`, the path the
   login item registers. `BUILD_NUMBER` sets `CFBundleVersion` (default: a UTC timestamp).
 - The bundle (ID `ru.sdfpro.ClaudeBar`, `LSUIElement`, so no Dock icon) is ad-hoc signed with the
-  bundle ID as its identifier. Whether Keychain access and launch at login survive rebuilds of an
-  ad-hoc-signed bundle is checked in the owner smoke gate (`docs/smoke-gate.md` once it exists);
-  it is not verified yet.
+  bundle ID as its identifier. Install, launch at login and live data were confirmed by the owner
+  (`docs/smoke-gate.md`); whether Keychain access survives a rebuild of an ad-hoc-signed bundle
+  was not tested and may require re-approving the Keychain prompt after an update.
 
 ## Settings
 
