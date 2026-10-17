@@ -84,10 +84,10 @@ before the task closes; a task marked `**Discuss:** yes` has its approach agreed
 **Goal:** `Stuchalin/claude-bar` exists on GitHub (public) with `main` and the execution branch `ci-and-homebrew-tap` pushed, CI green on the branch, and release `v0.1.0` published from a tag on the branch head (the owner asked for execution in a separate branch; `main` gets the branch when it lands).
 **Constraints:** Decisions → Repositories, Who publishes, Local-only paths. The proxy secret must never be published.
 **Done when:**
-- [ ] a secret scan over every ref to be pushed and the final tree is recorded (tool, scope, redacted result); "clean" means no findings by that scanner, not proof of absence
-- [ ] `.peer-planning/` and `.revmux/tasks/` are neither tracked nor in history
-- [ ] repository created, `main` and the branch pushed, CI checks green on the branch (run URL recorded)
-- [ ] no existing `v0.1.0` tag or release is overwritten (checked first; a rerun reuses or stops); tag `v0.1.0` pushed, release published, the downloaded zip matches its sidecar and passes the Task 1 checks after unpacking
+- [x] a secret scan over every ref to be pushed and the final tree is recorded (tool, scope, redacted result); "clean" means no findings by that scanner, not proof of absence
+- [x] `.peer-planning/` and `.revmux/tasks/` are neither tracked nor in history
+- [x] repository created, `main` and the branch pushed, CI checks green on the branch (run URL recorded)
+- [x] no existing `v0.1.0` tag or release is overwritten (checked first; a rerun reuses or stops); tag `v0.1.0` pushed, release published, the downloaded zip matches its sidecar and passes the Task 1 checks after unpacking
 
 ### Task 4: Tap with the Cask
 **Discuss:** yes
