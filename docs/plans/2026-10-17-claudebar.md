@@ -184,8 +184,8 @@ Note: implementation is complete; the visible-status-item acceptance (installed 
 ### Task 9: Documentation and final acceptance
 **Executor:** primary agent; owner confirms the story checks.
 - [x] `README.md` describes build/install, Settings, the proxy requirement, data location, Clear history, the undetectable-account-switch limitation and the best-effort scoped-limit identity; the design doc is marked as background superseded by README and code where they differ
-- [ ] every story and every Done-when above holds, owner-confirmed where marked
-- [ ] `swift build`, full `swift test` and `Scripts/package_app.sh` pass from a clean checkout of the final state; result recorded in the final commit message
+- [x] every story and every Done-when above holds, owner-confirmed where marked
+- [x] `swift build`, full `swift test` and `Scripts/package_app.sh` pass from a clean checkout of the final state; result recorded in the final commit message
 
 ## Post-Completion
 Outside this plan, owner-coordinated only:
